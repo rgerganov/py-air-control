@@ -1,5 +1,5 @@
 Command line application for controlling Philips air purifiiers.
-It is tested with Philips Air Purifier AC2927 but it should work with other models as well.
+It is tested with Philips Air Purifier AC2729 but it should work with other models as well.
 
 Usage
 ---
