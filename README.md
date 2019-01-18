@@ -6,21 +6,21 @@ Usage
 Python 3.4+ is required.
 
 Getting the current status of device with IP 192.168.0.17:
-
-    $ ./airctrl.py 192.168.0.17
-    [pwr]   Power: ON
-    [pm25]  PM25: 4
-    [rh]    Humidity: 32
-    [rhset] Target humidity: 60
-    [iaql]  Allergen index: 1
-    [temp]  Temperature: 22
-    [func]  Function: Purification & Humidification
-    [mode]  Mode: M
-    [om]    Fan speed: 2
-    [aqil]  Light brightness: 100
-    [wl]    Water level: 100
-    [cl]    Child lock: False
-
+```
+$ ./airctrl.py 192.168.0.17
+[pwr]   Power: ON
+[pm25]  PM25: 4
+[rh]    Humidity: 32
+[rhset] Target humidity: 60
+[iaql]  Allergen index: 1
+[temp]  Temperature: 22
+[func]  Function: Purification & Humidification
+[mode]  Mode: M
+[om]    Fan speed: 2
+[aqil]  Light brightness: 100
+[wl]    Water level: 100
+[cl]    Child lock: False
+```
 You can change settings by using the prefix in the square brackets as a command line option.
 For example to set fan speed 2:
 
@@ -39,3 +39,12 @@ Power off the device:
     $ ./airctrl.py 192.168.0.17 --pwr 0
 
 and so on
+
+To get filters status:
+```
+$ ./airctrl.py 192.168.0.17 --filters
+Pre-filter and Wick: clean in 245 hours
+Wick filter: replace in 3965 hours
+Active carbon filter: replace in 1565 hours
+HEPA filter: replace in 3965 hours
+```

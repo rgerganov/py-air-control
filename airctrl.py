@@ -7,6 +7,8 @@ import argparse
 import json
 import random
 import os
+import sys
+import pprint
 
 G = int('A4D1CBD5C3FD34126765A442EFB99905F8104DD258AC507FD6406CFF14266D31266FEA1E5C41564B777E690F5504F213160217B4B01B886A5E91547F9E2749F4D7FBD7D3B9A92EE1909D0D2263F80A76A6A24C087A091F531DBF0A0169B6A28AD662A4D18E73AFA32D779D5918D08BC8858F4DCEF97C2A24855E6EEB22B3B2E5', 16)
 P = int('B10B8F96A080E01DDE92DE5EAE5D54EC52C99FBCFB06A3C69A6A9DCA52D23B616073E28675A23D189838EF1E2EE652C013ECB4AEA906112324975C3CD49B83BFACCBDD7D90C4BD7098488E9C219A73724EFFD6FAE5644738FAA31A4FF55BCCC0A151AF5F0DC8B4BD45BF37DF365C1A65E68CFDA76D4DA708DF1FB2BC2E4A4371', 16)
@@ -83,16 +85,41 @@ class AirClient(object):
             status = json.loads(resp)
             self._dump_status(status, debug=debug)
 
-    def _read(self):
-        url = 'http://{}/di/v1/products/1/air'.format(self._host)
+    def set_wifi(self, ssid, pwd):
+        values = {}
+        if ssid:
+            values['ssid'] = ssid
+        if pwd:
+            values['password'] = pwd
+        pprint.pprint(values)
+        body = encrypt(values, self._session_key)
+        url = 'http://{}/di/v1/products/0/wifi'.format(self._host)
+        req = urllib.request.Request(url=url, data=body, method='PUT')
+        with urllib.request.urlopen(req) as response:
+            resp = response.read()
+            resp = decrypt(resp.decode('ascii'), self._session_key)
+            wifi = json.loads(resp)
+            pprint.pprint(wifi)
+
+    def _get_once(self, url):
         with urllib.request.urlopen(url) as response:
             resp = response.read()
             resp = decrypt(resp.decode('ascii'), self._session_key)
             return json.loads(resp)
 
+    def _get(self, url):
+        try:
+            return self._get_once(url)
+        except Exception as e:
+            print("GET error: {}".format(str(e)))
+            print("Will retry after getting a new key ...")
+            self._get_key()
+            return self._get_once(url)
+
     def _dump_status(self, status, debug=False):
         if debug:
-            print(status)
+            pprint.pprint(status)
+            print()
         if 'pwr' in status:
             pwr = status['pwr']
             pwr_str = {'1': 'ON', '0': 'OFF'}
@@ -153,15 +180,29 @@ class AirClient(object):
                 print('-'*20)
                 print('Error: {}'.format(err))
 
-    def read_device(self, debug=False):
-        try:
-            status = self._read()
-        except Exception as e:
-            print("Read error: {}".format(str(e)))
-            print("Will try to get a new key ...")
-            self._get_key()
-            status = self._read()
+    def get_status(self, debug=False):
+        url = 'http://{}/di/v1/products/1/air'.format(self._host)
+        status = self._get(url)
         self._dump_status(status, debug=debug)
+
+    def get_wifi(self):
+        url = 'http://{}/di/v1/products/0/wifi'.format(self._host)
+        wifi = self._get(url)
+        pprint.pprint(wifi)
+
+    def get_firmware(self):
+        url = 'http://{}/di/v1/products/0/firmware'.format(self._host)
+        firmware = self._get(url)
+        pprint.pprint(firmware)
+
+    def get_filters(self):
+        url = 'http://{}/di/v1/products/1/fltsts'.format(self._host)
+        filters = self._get(url)
+        print('Pre-filter and Wick: clean in {} hours'.format(filters['fltsts0']))
+        print('Wick filter: replace in {} hours'.format(filters['wicksts']))
+        print('Active carbon filter: replace in {} hours'.format(filters['fltsts2']))
+        print('HEPA filter: replace in {} hours'.format(filters['fltsts1']))
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -175,7 +216,28 @@ if __name__ == '__main__':
     parser.add_argument('--aqil', help='set light brightness', choices=['0','25','50','75','100'])
     parser.add_argument('--dt', help='set timer', choices=['0','1','2','3','4','5'])
     parser.add_argument('--cl', help='set child lock', choices=['True','False'])
+    parser.add_argument('--wifi', help='read wifi options', action='store_true')
+    parser.add_argument('--wifi-ssid', help='set wifi ssid')
+    parser.add_argument('--wifi-pwd', help='set wifi password')
+    parser.add_argument('--firmware', help='read firmware', action='store_true')
+    parser.add_argument('--filters', help='read filters status', action='store_true')
     args = parser.parse_args()
+
+    c = AirClient(args.ipaddr)
+    c.load_key()
+    #print(decrypt('nj7hPu/tyQcyHKl2Xqdu/7x7VRTByV58AmMUM5Cnhn4rjRKYh1CDe4+1Cz4tn2kz5RQemv9ahCk2qWSCAJ342w==', c._session_key))
+    if args.wifi:
+        c.get_wifi()
+        sys.exit(0)
+    if args.firmware:
+        c.get_firmware()
+        sys.exit(0)
+    if args.wifi_ssid or args.wifi_pwd:
+        c.set_wifi(args.wifi_ssid, args.wifi_pwd)
+        sys.exit(0)
+    if args.filters:
+        c.get_filters()
+        sys.exit(0)
 
     values = {}
     if args.om:
@@ -195,9 +257,7 @@ if __name__ == '__main__':
     if args.cl:
         values['cl'] = (args.cl == 'True')
 
-    c = AirClient(args.ipaddr)
-    c.load_key()
     if values:
         c.set_values(values, debug=args.debug)
     else:
-        c.read_device(debug=args.debug)
+        c.get_status(debug=args.debug)
