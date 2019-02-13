@@ -204,7 +204,7 @@ class AirClient(object):
         print('HEPA filter: replace in {} hours'.format(filters['fltsts1']))
 
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('ipaddr', help='IP address of air purifier')
     parser.add_argument('-d', '--debug', help='show debug output', action='store_true')
@@ -225,7 +225,6 @@ if __name__ == '__main__':
 
     c = AirClient(args.ipaddr)
     c.load_key()
-    #print(decrypt('nj7hPu/tyQcyHKl2Xqdu/7x7VRTByV58AmMUM5Cnhn4rjRKYh1CDe4+1Cz4tn2kz5RQemv9ahCk2qWSCAJ342w==', c._session_key))
     if args.wifi:
         c.get_wifi()
         sys.exit(0)
@@ -261,3 +260,7 @@ if __name__ == '__main__':
         c.set_values(values, debug=args.debug)
     else:
         c.get_status(debug=args.debug)
+
+
+if __name__ == '__main__':
+    main()
