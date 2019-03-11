@@ -199,7 +199,8 @@ class AirClient(object):
         url = 'http://{}/di/v1/products/1/fltsts'.format(self._host)
         filters = self._get(url)
         print('Pre-filter and Wick: clean in {} hours'.format(filters['fltsts0']))
-        print('Wick filter: replace in {} hours'.format(filters['wicksts']))
+        if 'wicksts' in filters:
+            print('Wick filter: replace in {} hours'.format(filters['wicksts']))
         print('Active carbon filter: replace in {} hours'.format(filters['fltsts2']))
         print('HEPA filter: replace in {} hours'.format(filters['fltsts1']))
 
