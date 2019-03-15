@@ -147,7 +147,7 @@ class AirClient(object):
             print('[func]  Function: {}'.format(func))
         if 'mode' in status:
             mode = status['mode']
-            mode_str = {'P': 'auto', 'A': 'allergen', 'S': 'sleep'}
+            mode_str = {'P': 'auto', 'A': 'allergen', 'S': 'sleep',  'M': 'manual', 'B': 'bacteria'}
             mode = mode_str.get(mode, mode)
             print('[mode]  Mode: {}'.format(mode))
         if 'om' in status:
@@ -211,7 +211,7 @@ def main():
     parser.add_argument('-d', '--debug', help='show debug output', action='store_true')
     parser.add_argument('--om', help='set fan speed', choices=['1','2','3','s','t'])
     parser.add_argument('--pwr', help='power on/off', choices=['0','1'])
-    parser.add_argument('--mode', help='set mode', choices=['P','A','S'])
+    parser.add_argument('--mode', help='set mode', choices=['P','A','S','M','B'])
     parser.add_argument('--rhset', help='set target humidity', choices=['40','50','60','70'])
     parser.add_argument('--func', help='set function', choices=['P','PH'])
     parser.add_argument('--aqil', help='set light brightness', choices=['0','25','50','75','100'])
