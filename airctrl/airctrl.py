@@ -75,7 +75,7 @@ class AirClient(object):
         else:
             self._get_key()
 
-    def set_values(self, values, debug=False):
+    def set_values(self, values, use_json=False, debug=False):
         body = encrypt(values, self._session_key)
         url = 'http://{}/di/v1/products/1/air'.format(self._host)
         req = urllib.request.Request(url=url, data=body, method='PUT')
@@ -83,7 +83,7 @@ class AirClient(object):
             resp = response.read()
             resp = decrypt(resp.decode('ascii'), self._session_key)
             status = json.loads(resp)
-            self._dump_status(status, debug=debug)
+            self._dump_status(status, use_json=use_json, debug=debug)
 
     def set_wifi(self, ssid, pwd):
         values = {}
@@ -116,7 +116,11 @@ class AirClient(object):
             self._get_key()
             return self._get_once(url)
 
-    def _dump_status(self, status, debug=False):
+    def _dump_status(self, status, use_json=False, debug=False):
+        if use_json and not debug:
+            pprint.pprint(status)
+            print()
+            return
         if debug:
             pprint.pprint(status)
             print()
@@ -190,10 +194,10 @@ class AirClient(object):
                 print('-'*20)
                 print('Error: {}'.format(err))
 
-    def get_status(self, debug=False):
+    def get_status(self, use_json=False, debug=False):
         url = 'http://{}/di/v1/products/1/air'.format(self._host)
         status = self._get(url)
-        self._dump_status(status, debug=debug)
+        self._dump_status(status, use_json=use_json, debug=debug)
 
     def get_wifi(self):
         url = 'http://{}/di/v1/products/0/wifi'.format(self._host)
@@ -275,9 +279,9 @@ def main():
         values['cl'] = (args.cl == 'True')
 
     if values:
-        c.set_values(values, debug=args.debug)
+        c.set_values(values, use_json=args.json, debug=args.debug)
     else:
-        c.get_status(debug=args.debug)
+        c.get_status(use_json=args.json, debug=args.debug)
 
 
 if __name__ == '__main__':
