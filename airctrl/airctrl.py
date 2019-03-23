@@ -158,6 +158,16 @@ class AirClient(object):
         if 'aqil' in status:
             aqil = status['aqil']
             print('[aqil]  Light brightness: {}'.format(aqil))
+        if 'uil' in status:
+            uil = status['uil']
+            uil_str = {'1': 'ON', '0': 'OFF'}
+            uil = uil_str.get(uil, uil)
+            print('[uil]   Buttons light: {}'.format(uil))
+        if 'ddp' in status:
+            ddp = status['ddp']
+            ddp_str = {'1': 'PM2.5', '0': 'IAI'}
+            ddp = ddp_str.get(ddp, ddp)
+            print('[ddp]   Used index: {}'.format(ddp))
         if 'wl' in status:
             wl = status['wl']
             print('[wl]    Water level: {}'.format(wl))
@@ -209,14 +219,15 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('ipaddr', help='IP address of air purifier')
     parser.add_argument('-d', '--debug', help='show debug output', action='store_true')
+    parser.add_argument('-j', '--json', help='use json-only output', action='store_true')
     parser.add_argument('--om', help='set fan speed', choices=['1','2','3','s','t'])
     parser.add_argument('--pwr', help='power on/off', choices=['0','1'])
     parser.add_argument('--mode', help='set mode', choices=['P','A','S','M','B'])
     parser.add_argument('--rhset', help='set target humidity', choices=['40','50','60','70'])
     parser.add_argument('--func', help='set function', choices=['P','PH'])
     parser.add_argument('--aqil', help='set light brightness', choices=['0','25','50','75','100'])
-    parser.add_argument('--ddp', help='set indicator pm2.5/IAI', choices=['0','1'])
     parser.add_argument('--uil', help='set button lights on/off', choices=['0','1'])
+    parser.add_argument('--ddp', help='set indicator pm2.5/IAI', choices=['0','1'])
     parser.add_argument('--dt', help='set timer', choices=['0','1','2','3','4','5'])
     parser.add_argument('--cl', help='set child lock', choices=['True','False'])
     parser.add_argument('--wifi', help='read wifi options', action='store_true')
