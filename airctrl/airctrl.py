@@ -9,6 +9,7 @@ import random
 import os
 import sys
 import pprint
+import configparser
 
 G = int('A4D1CBD5C3FD34126765A442EFB99905F8104DD258AC507FD6406CFF14266D31266FEA1E5C41564B777E690F5504F213160217B4B01B886A5E91547F9E2749F4D7FBD7D3B9A92EE1909D0D2263F80A76A6A24C087A091F531DBF0A0169B6A28AD662A4D18E73AFA32D779D5918D08BC8858F4DCEF97C2A24855E6EEB22B3B2E5', 16)
 P = int('B10B8F96A080E01DDE92DE5EAE5D54EC52C99FBCFB06A3C69A6A9DCA52D23B616073E28675A23D189838EF1E2EE652C013ECB4AEA906112324975C3CD49B83BFACCBDD7D90C4BD7098488E9C219A73724EFFD6FAE5644738FAA31A4FF55BCCC0A151AF5F0DC8B4BD45BF37DF365C1A65E68CFDA76D4DA708DF1FB2BC2E4A4371', 16)
@@ -60,18 +61,30 @@ class AirClient(object):
         s_bytes = s.to_bytes(128, byteorder='big')[:16]
         session_key = aes_decrypt(bytes.fromhex(key), s_bytes)
         self._session_key = session_key[:16]
+        self._save_key()
+
+    def _save_key(self):
+        config = configparser.ConfigParser()
         fpath = os.path.expanduser('~/.pyairctrl')
+        config.read(fpath)
+        if 'keys' not in config.sections():
+            config['keys'] = {}
         hex_key = binascii.hexlify(self._session_key).decode('ascii')
+        config['keys'][self._host] = hex_key
         print("Saving session_key {} to {}".format(hex_key, fpath))
         with open(fpath, 'w') as f:
-            f.write(hex_key)
+            config.write(f)
 
     def load_key(self):
         fpath = os.path.expanduser('~/.pyairctrl')
         if os.path.isfile(fpath):
-            with open(fpath, 'r') as f:
-                hex_key = f.read().strip()
+            config = configparser.ConfigParser()
+            config.read(fpath)
+            if self._host in config['keys']:
+                hex_key = config['keys'][self._host]
                 self._session_key = bytes.fromhex(hex_key)
+            else:
+                self._get_key()
         else:
             self._get_key()
 
