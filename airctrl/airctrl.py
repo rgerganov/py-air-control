@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad, unpad
 import urllib.request
 import base64
 import binascii
@@ -20,11 +21,9 @@ def aes_decrypt(data, key):
     return cipher.decrypt(data)
 
 def encrypt(values, key):
-    pad = lambda s: s + (16 - len(s) % 16) * chr(16 - len(s) % 16)
     # add two random bytes in front of the body
     data = 'AA' + json.dumps(values)
-    data = pad(data)
-    data = data.encode('ascii')
+    data = pad(bytearray(data, 'ascii'), 16, style='pkcs7')
     iv = bytes(16)
     cipher = AES.new(key, AES.MODE_CBC, iv)
     data_enc = cipher.encrypt(data)
@@ -32,11 +31,10 @@ def encrypt(values, key):
 
 def decrypt(data, key):
     payload = base64.b64decode(data)
+    data = aes_decrypt(payload, key)
     # response starts with 2 random bytes, exclude them
-    plain_bytes = aes_decrypt(payload, key)[2:]
-    plain = plain_bytes.decode('ascii')
-    # filter non-ascii chars used for AES padding
-    return ''.join([x for x in plain if ord(x)>=32 and ord(x)<127])
+    response = unpad(data, 16, style='pkcs7')[2:]
+    return response.decode('ascii')
 
 class AirClient(object):
 
