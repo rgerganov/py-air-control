@@ -5,7 +5,7 @@ import base64
 import binascii
 import argparse
 import json
-import random
+import secrets
 import os
 import sys
 import pprint
@@ -47,7 +47,7 @@ class AirClient(object):
     def _get_key(self):
         print('Exchanging secret key with the device ...')
         url = 'http://{}/di/v1/products/0/security'.format(self._host)
-        a = random.getrandbits(256)
+        a = secrets.randbits(256)
         A = pow(G, a, P)
         data = json.dumps({'diffie': format(A, 'x')})
         data_enc = data.encode('ascii')
