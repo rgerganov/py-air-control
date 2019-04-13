@@ -87,6 +87,11 @@ class AirClient(object):
                 self._get_key()
         else:
             self._get_key()
+        self._check_key()
+
+    def _check_key(self):
+        url = 'http://{}/di/v1/products/1/air'.format(self._host)
+        self._get(url)
 
     def set_values(self, values, debug=False):
         body = encrypt(values, self._session_key)
