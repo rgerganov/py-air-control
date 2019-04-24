@@ -90,11 +90,15 @@ class AirClient(object):
         body = encrypt(values, self._session_key)
         url = 'http://{}/di/v1/products/1/air'.format(self._host)
         req = urllib.request.Request(url=url, data=body, method='PUT')
-        with urllib.request.urlopen(req) as response:
-            resp = response.read()
-            resp = decrypt(resp.decode('ascii'), self._session_key)
-            status = json.loads(resp)
-            self._dump_status(status, debug=debug)
+        try:
+            with urllib.request.urlopen(req) as response:
+                resp = response.read()
+                resp = decrypt(resp.decode('ascii'), self._session_key)
+                status = json.loads(resp)
+                self._dump_status(status, debug=debug)
+        except urllib.error.HTTPError as e:
+            print("Error setting values (response code: {})".format(e.code))
+
 
     def set_wifi(self, ssid, pwd):
         values = {}
