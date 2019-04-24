@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/rgerganov/py-air-control.svg?branch=master)](https://travis-ci.org/rgerganov/py-air-control)
+[![PyPI version](https://badge.fury.io/py/py-air-control.svg)](https://badge.fury.io/py/py-air-control)
 
 Command line application for controlling Philips air purifiiers.
 
