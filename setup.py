@@ -9,7 +9,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="py-air-control",
-    version="0.0.3",
+    version="0.5.0",
     author="Radoslav Gerganov",
     author_email="rgerganov@gmail.com",
     description="Command line program for controlling Philips air purifiers",
