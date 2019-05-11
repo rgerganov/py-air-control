@@ -77,17 +77,17 @@ class AirClient(object):
 
     def load_key(self):
         fpath = os.path.expanduser('~/.pyairctrl')
-        if os.path.isfile(fpath):
+        if  os.path.isfile(fpath):
             config = configparser.ConfigParser()
             config.read(fpath)
             if self._host in config['keys']:
                 hex_key = config['keys'][self._host]
                 self._session_key = bytes.fromhex(hex_key)
+                self._check_key()
             else:
                 self._get_key()
         else:
             self._get_key()
-        self._check_key()
 
     def _check_key(self):
         url = 'http://{}/di/v1/products/1/air'.format(self._host)
