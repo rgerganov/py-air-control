@@ -47,6 +47,10 @@ For example to set fan speed 2:
 
     $ airctrl 192.168.0.17 --om 2
 
+For AC2889 you may need to specify both manual mode *and* fan speed:
+
+    $ airctrl 192.168.0.17 --mode M --om 2
+
 Set target humidity to 50%:
 
     $ airctrl 192.168.0.17 --rhset 50
