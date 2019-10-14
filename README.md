@@ -1,7 +1,7 @@
 [![Build Status](https://travis-ci.org/rgerganov/py-air-control.svg?branch=master)](https://travis-ci.org/rgerganov/py-air-control)
 [![PyPI version](https://badge.fury.io/py/py-air-control.svg)](https://badge.fury.io/py/py-air-control)
 
-Command line application for controlling Philips air purifiiers.
+Command line application for controlling Philips air purifiers.
 
 It is tested with AC2729 and AC2889 models but it should work with all purifiers made by Philips.
 
