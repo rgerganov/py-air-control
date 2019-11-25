@@ -6,4 +6,4 @@ python:
 install:
     - pip install -r requirements.txt
     - pip install .
-script: airctrl -h
+script: airctrl -h && cloudctrl -h

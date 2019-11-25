@@ -24,7 +24,7 @@ The purifier can be connected to a Wi-Fi network with the following steps:
 airctrl 192.168.1.1 --wifi-ssid <your_wifi_ssid> --wifi-pwd <your_wifi_password>
 ```
 
-Usage
+Usage in the local network
 ---
 Getting the current status of device with IP 192.168.0.17:
 ```
@@ -73,3 +73,37 @@ Wick filter: replace in 3965 hours
 Active carbon filter: replace in 1565 hours
 HEPA filter: replace in 3965 hours
 ```
+
+Usage via cloud services
+---
+Use the `cloudctrl` script to control your device via the Philips cloud.
+
+First you need to find your device id, provision an account and pair the account with the device id:
+```
+$ airctrl 192.168.0.17 --wifi
+{'cppid': '9dcc618e9a82045d',
+...
+$ cloudctrl 9dcc618e9a82045d --pair 192.168.0.17
+Creating cloud account ...
+Logging in with 000000fff0000019
+Client id: 000000fff10d40a1
+Client key: NrIBL02WJNFDICqR6FGKig==
+Exchanging secret key with the device ...
+Saving session_key 512735aa3a5dc2608dfa8997b1b03a29 to /home/rgerganov/.pyairctrl
+Pairing with 192.168.0.17 ...
+{'return': [0]}
+Logging in with 000000fff10d40a1
+Sending pair request to cloud service ...
+Relationship status: completed
+```
+The pairing needs to be done only once for each device, in the local network of the device.
+
+
+Then you can control the paired device over the internet by using its ID and the account saved in `~/.pyairctrl`:
+```
+$ cloudctrl 9dcc618e9a82045d --pwr 1
+Logging in with 000000fff10d40a1
+Sending event {'pwr': '1'} to device with id 9dcc618e9a82045d
+```
+
+_Note: all IDs and credentials above are randomly generated and only used for illustration purposes_

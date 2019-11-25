@@ -78,7 +78,7 @@ class AirClient(object):
         if os.path.isfile(fpath):
             config = configparser.ConfigParser()
             config.read(fpath)
-            if self._host in config['keys']:
+            if 'keys' in config and self._host in config['keys']:
                 hex_key = config['keys'][self._host]
                 self._session_key = bytes.fromhex(hex_key)
             else:
@@ -228,6 +228,18 @@ class AirClient(object):
             print('Wick filter: replace in {} hours'.format(filters['wicksts']))
         print('Active carbon filter: replace in {} hours'.format(filters['fltsts2']))
         print('HEPA filter: replace in {} hours'.format(filters['fltsts1']))
+
+    def pair(self, client_id, client_secret):
+        values = {}
+        values['Pair'] = ['FI-AIR-AND', client_id, client_secret]
+        body = encrypt(values, self._session_key)
+        url = 'http://{}/di/v1/products/0/pairing'.format(self._host)
+        req = urllib.request.Request(url=url, data=body, method='PUT')
+        with urllib.request.urlopen(req) as response:
+            resp = response.read()
+            resp = decrypt(resp.decode('ascii'), self._session_key)
+            resp = json.loads(resp)
+            pprint.pprint(resp)
 
 
 def main():
