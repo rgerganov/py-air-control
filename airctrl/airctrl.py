@@ -200,7 +200,7 @@ class AirClient(object):
         if 'err' in status:
             err = status['err']
             if err != 0:
-                err_str = {49408: 'no water', 32768: 'water tank open'}
+                err_str = {49408: 'no water', 32768: 'water tank open', 49155: 'pre-filter must be cleaned'}
                 err = err_str.get(err, err)
                 print('-'*20)
                 print('Error: {}'.format(err))
