@@ -9,19 +9,19 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="py-air-control",
-    version="0.6.0",
+    version="1.0.0",
     author="Radoslav Gerganov",
     author_email="rgerganov@gmail.com",
     description="Command line program for controlling Philips air purifiers",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/rgerganov/py-air-control",
-    packages=['airctrl'],
+    packages=['pyairctrl'],
     install_requires=['pycryptodome>=3.4.7'],
     entry_points={
         'console_scripts': [
-            'airctrl=airctrl.airctrl:main',
-            'cloudctrl=airctrl.cloudctrl:main',
+            'airctrl=pyairctrl.airctrl:main',
+            'cloudctrl=pyairctrl.cloudctrl:main',
         ],
     },
     classifiers=[

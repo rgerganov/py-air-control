@@ -11,7 +11,7 @@ import argparse
 import configparser
 import urllib.request
 import urllib.parse
-from airctrl import AirClient
+from pyairctrl.airctrl import AirClient
 
 def parse_attr(str, key):
     p = re.compile('%s=\"(.+?)\"' % key)
