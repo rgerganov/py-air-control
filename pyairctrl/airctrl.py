@@ -11,6 +11,8 @@ import os
 import sys
 import pprint
 import configparser
+import socket
+import xml.etree.ElementTree as ET
 
 G = int('A4D1CBD5C3FD34126765A442EFB99905F8104DD258AC507FD6406CFF14266D31266FEA1E5C41564B777E690F5504F213160217B4B01B886A5E91547F9E2749F4D7FBD7D3B9A92EE1909D0D2263F80A76A6A24C087A091F531DBF0A0169B6A28AD662A4D18E73AFA32D779D5918D08BC8858F4DCEF97C2A24855E6EEB22B3B2E5', 16)
 P = int('B10B8F96A080E01DDE92DE5EAE5D54EC52C99FBCFB06A3C69A6A9DCA52D23B616073E28675A23D189838EF1E2EE652C013ECB4AEA906112324975C3CD49B83BFACCBDD7D90C4BD7098488E9C219A73724EFFD6FAE5644738FAA31A4FF55BCCC0A151AF5F0DC8B4BD45BF37DF365C1A65E68CFDA76D4DA708DF1FB2BC2E4A4371', 16)
@@ -37,6 +39,44 @@ def decrypt(data, key):
     return response.decode('ascii')
 
 class AirClient(object):
+
+    @staticmethod
+    def ssdp(timeout=1, repeats=3, debug=False):
+        addr = '239.255.255.250'
+        port = 1900
+        msg = '\r\n'.join([
+            'M-SEARCH * HTTP/1.1',
+            'HOST: {}:{}'.format(addr, port),
+            'ST: urn:philips-com:device:DiProduct:1',
+            'MX: 1', 'MAN: "ssdp:discover"','', '']).encode('ascii')
+        urls = {}
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) as s:
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+            s.setsockopt(socket.SOL_IP, socket.IP_MULTICAST_TTL, 20)
+            s.settimeout(timeout)
+            for i in range(repeats):
+                s.sendto(msg, (addr, port))
+                try:
+                    while True:
+                        data, (ip, _) = s.recvfrom(1024)
+                        url = next((x for x in data.decode('ascii').splitlines() if x.startswith('LOCATION: ')), None)
+                        urls.update({ip: url[10:]})
+                except socket.timeout:
+                    pass
+                if len(urls): break
+        resp = []
+        for ip in urls.keys():
+            with urllib.request.urlopen(urls[ip]) as response:
+                xml = ET.fromstring(response.read())
+                resp.append({'ip': ip})
+                ns = {'urn': 'urn:schemas-upnp-org:device-1-0'}
+                for d in xml.findall('urn:device', ns):
+                    for t in ['modelName', 'modelNumber', 'friendlyName']:
+                        resp[-1].update({t: d.find('urn:'+t, ns).text})
+        if debug:
+            pprint.pprint(resp)
+        return resp
 
     def __init__(self, host):
         self._host = host
@@ -244,7 +284,7 @@ class AirClient(object):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('ipaddr', help='IP address of air purifier')
+    parser.add_argument('--ipaddr', help='IP address of air purifier')
     parser.add_argument('-d', '--debug', help='show debug output', action='store_true')
     parser.add_argument('--om', help='set fan speed', choices=['1','2','3','s','t'])
     parser.add_argument('--pwr', help='power on/off', choices=['0','1'])
@@ -263,47 +303,56 @@ def main():
     parser.add_argument('--filters', help='read filters status', action='store_true')
     args = parser.parse_args()
 
-    c = AirClient(args.ipaddr)
-    c.load_key()
-    if args.wifi:
-        c.get_wifi()
-        sys.exit(0)
-    if args.firmware:
-        c.get_firmware()
-        sys.exit(0)
-    if args.wifi_ssid or args.wifi_pwd:
-        c.set_wifi(args.wifi_ssid, args.wifi_pwd)
-        sys.exit(0)
-    if args.filters:
-        c.get_filters()
-        sys.exit(0)
-
-    values = {}
-    if args.om:
-        values['om'] = args.om
-    if args.pwr:
-        values['pwr'] = args.pwr
-    if args.mode:
-        values['mode'] = args.mode
-    if args.rhset:
-        values['rhset'] = int(args.rhset)
-    if args.func:
-        values['func'] = args.func
-    if args.aqil:
-        values['aqil'] = int(args.aqil)
-    if args.ddp:
-        values['ddp'] = args.ddp
-    if args.uil:
-        values['uil'] = args.uil
-    if args.dt:
-        values['dt'] = int(args.dt)
-    if args.cl:
-        values['cl'] = (args.cl == 'True')
-
-    if values:
-        c.set_values(values, debug=args.debug)
+    if args.ipaddr:
+        devices = [ {'ip': args.ipaddr} ]
     else:
-        c.get_status(debug=args.debug)
+        devices = AirClient.ssdp(debug=args.debug)
+        if not devices:
+            print('Air purifier not autodetected. Try --ipaddr option to force specific IP address.')
+            sys.exit(1)
+    
+    for device in devices:
+        c = AirClient(device['ip'])
+        c.load_key()
+        if args.wifi:
+            c.get_wifi()
+            sys.exit(0)
+        if args.firmware:
+            c.get_firmware()
+            sys.exit(0)
+        if args.wifi_ssid or args.wifi_pwd:
+            c.set_wifi(args.wifi_ssid, args.wifi_pwd)
+            sys.exit(0)
+        if args.filters:
+            c.get_filters()
+            sys.exit(0)
+
+        values = {}
+        if args.om:
+            values['om'] = args.om
+        if args.pwr:
+            values['pwr'] = args.pwr
+        if args.mode:
+            values['mode'] = args.mode
+        if args.rhset:
+            values['rhset'] = int(args.rhset)
+        if args.func:
+            values['func'] = args.func
+        if args.aqil:
+            values['aqil'] = int(args.aqil)
+        if args.ddp:
+            values['ddp'] = args.ddp
+        if args.uil:
+            values['uil'] = args.uil
+        if args.dt:
+            values['dt'] = int(args.dt)
+        if args.cl:
+            values['cl'] = (args.cl == 'True')
+
+        if values:
+            c.set_values(values, debug=args.debug)
+        else:
+            c.get_status(debug=args.debug)
 
 
 if __name__ == '__main__':

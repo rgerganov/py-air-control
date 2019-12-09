@@ -21,14 +21,14 @@ The purifier can be connected to a Wi-Fi network with the following steps:
  2. Connect your PC to the "PHILIPS Setup" network and get IP settings via DHCP. The IP address of the purifier will be 192.168.1.1.
  3. Now you can re-configure the wi-fi network of the purifier like this:
 ```
-airctrl 192.168.1.1 --wifi-ssid <your_wifi_ssid> --wifi-pwd <your_wifi_password>
+airctrl --ipaddr 192.168.1.1 --wifi-ssid <your_wifi_ssid> --wifi-pwd <your_wifi_password>
 ```
 
 Usage in the local network
 ---
 Getting the current status of device with IP 192.168.0.17:
 ```
-$ airctrl 192.168.0.17
+$ airctrl --ipaddr 192.168.0.17
 [pwr]   Power: ON
 [pm25]  PM25: 4
 [rh]    Humidity: 32
@@ -42,32 +42,35 @@ $ airctrl 192.168.0.17
 [wl]    Water level: 100
 [cl]    Child lock: False
 ```
+You don't have to specify the IP address (--ipaddr parameter) if there is only one device in your LAN or you want to send commands to all your devices.
+The IP address will be autodetected using SSDP (UPnP) if the UDP 1900 port is not blocked.
+
 You can change settings by using the prefix in the square brackets as a command line option.
 For example to set fan speed 2:
 
-    $ airctrl 192.168.0.17 --om 2
+    $ airctrl --om 2
 
 For AC2889 you may need to specify both manual mode *and* fan speed:
 
-    $ airctrl 192.168.0.17 --mode M --om 2
+    $ airctrl --mode M --om 2
 
 Set target humidity to 50%:
 
-    $ airctrl 192.168.0.17 --rhset 50
+    $ airctrl --rhset 50
 
 Change function to "Purification":
 
-    $ airctrl 192.168.0.17 --func P
+    $ airctrl --func P
 
 Power off the device:
 
-    $ airctrl 192.168.0.17 --pwr 0
+    $ airctrl --pwr 0
 
 and so on
 
 To get filters status:
 ```
-$ airctrl 192.168.0.17 --filters
+$ airctrl --filters
 Pre-filter and Wick: clean in 245 hours
 Wick filter: replace in 3965 hours
 Active carbon filter: replace in 1565 hours
@@ -80,7 +83,7 @@ Use the `cloudctrl` script to control your device via the Philips cloud.
 
 First you need to find your device id, provision an account and pair the account with the device id:
 ```
-$ airctrl 192.168.0.17 --wifi
+$ airctrl --ipaddr 192.168.0.17 --wifi
 {'cppid': '9dcc618e9a82045d',
 ...
 $ cloudctrl 9dcc618e9a82045d --pair 192.168.0.17
