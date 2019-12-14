@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from Cryptodome.Cipher import AES
 from Cryptodome.Util.Padding import pad, unpad
-import urllib.request
+import requests
 import base64
 import binascii
 import argparse
@@ -67,8 +67,9 @@ class AirClient(object):
                 if len(urls): break
         resp = []
         for ip in urls.keys():
-            with urllib.request.urlopen(urls[ip]) as response:
-                xml = ET.fromstring(response.read())
+            response = requests.get(urls[ip])
+            if response.status_code == requests.codes.ok:
+                xml = ET.fromstring(response.text)
                 resp.append({'ip': ip})
                 ns = {'urn': 'urn:schemas-upnp-org:device-1-0'}
                 for d in xml.findall('urn:device', ns):
@@ -84,15 +85,11 @@ class AirClient(object):
 
     def _get_key(self):
         print('Exchanging secret key with the device ...')
-        url = 'http://{}/di/v1/products/0/security'.format(self._host)
         a = random.getrandbits(256)
         A = pow(G, a, P)
         data = json.dumps({'diffie': format(A, 'x')})
         data_enc = data.encode('ascii')
-        req = urllib.request.Request(url=url, data=data_enc, method='PUT')
-        with urllib.request.urlopen(req) as response:
-            resp = response.read().decode('ascii')
-            dh = json.loads(resp)
+        dh = self._put('0/security', data_enc)
         key = dh['key']
         B = int(dh['hellman'], 16)
         s = pow(B, a, P)
@@ -128,22 +125,11 @@ class AirClient(object):
             self._get_key()
 
     def _check_key(self):
-        url = 'http://{}/di/v1/products/1/air'.format(self._host)
-        self._get(url)
+        self._get('1/air')
 
     def set_values(self, values, debug=False):
-        body = encrypt(values, self._session_key)
-        url = 'http://{}/di/v1/products/1/air'.format(self._host)
-        req = urllib.request.Request(url=url, data=body, method='PUT')
-        try:
-            with urllib.request.urlopen(req) as response:
-                resp = response.read()
-                resp = decrypt(resp.decode('ascii'), self._session_key)
-                status = json.loads(resp)
-                self._dump_status(status, debug=debug)
-        except urllib.error.HTTPError as e:
-            print("Error setting values (response code: {})".format(e.code))
-
+        status = self._put('1/air', values, encrypted=True)
+        self._dump_status(status, debug=debug)
 
     def set_wifi(self, ssid, pwd):
         values = {}
@@ -152,29 +138,37 @@ class AirClient(object):
         if pwd:
             values['password'] = pwd
         pprint.pprint(values)
-        body = encrypt(values, self._session_key)
-        url = 'http://{}/di/v1/products/0/wifi'.format(self._host)
-        req = urllib.request.Request(url=url, data=body, method='PUT')
-        with urllib.request.urlopen(req) as response:
-            resp = response.read()
-            resp = decrypt(resp.decode('ascii'), self._session_key)
-            wifi = json.loads(resp)
-            pprint.pprint(wifi)
+        wifi = self._put('0/wifi', values, encrypted=True)
+        pprint.pprint(wifi)
 
-    def _get_once(self, url):
-        with urllib.request.urlopen(url) as response:
-            resp = response.read()
-            resp = decrypt(resp.decode('ascii'), self._session_key)
-            return json.loads(resp)
+    def _get_once(self, endpoint):
+        url = 'http://{}/di/v1/products/{}'.format(self._host, endpoint)
+        response = requests.get(url)
+        response.raise_for_status()
+        resp = decrypt(response.text, self._session_key)
+        return json.loads(resp)
 
-    def _get(self, url):
+    def _get(self, endpoint):
         try:
-            return self._get_once(url)
+            return self._get_once(endpoint)
         except Exception as e:
-            print("GET error: {}".format(str(e)))
-            print("Will retry after getting a new key ...")
-            self._get_key()
-            return self._get_once(url)
+            print('Cannot read from device: {}: {}'.format(type(e).__name__, e))
+        print('Will retry after getting a new key ...')
+        self._get_key()
+        return self._get_once(endpoint)
+
+    def _put(self, endpoint, body, encrypted=False):
+        if encrypted:
+            body = encrypt(body, self._session_key)
+        url = 'http://{}/di/v1/products/{}'.format(self._host, endpoint)
+        response = requests.put(url, body)
+        response.raise_for_status()
+        if response.status_code == 255 and len(response.text) == 1:
+            raise ValueError('An option not supported by device')
+        resp = response.text
+        if encrypted:
+            resp = decrypt(resp, self._session_key)
+        return json.loads(resp)
 
     def _dump_status(self, status, debug=False):
         if debug:
@@ -251,23 +245,19 @@ class AirClient(object):
                 print('Error: {}'.format(err))
 
     def get_status(self, debug=False):
-        url = 'http://{}/di/v1/products/1/air'.format(self._host)
-        status = self._get(url)
+        status = self._get('1/air')
         self._dump_status(status, debug=debug)
 
     def get_wifi(self):
-        url = 'http://{}/di/v1/products/0/wifi'.format(self._host)
-        wifi = self._get(url)
+        wifi = self._get('0/wifi')
         pprint.pprint(wifi)
 
     def get_firmware(self):
-        url = 'http://{}/di/v1/products/0/firmware'.format(self._host)
-        firmware = self._get(url)
+        firmware = self._get('0/firmware')
         pprint.pprint(firmware)
 
     def get_filters(self):
-        url = 'http://{}/di/v1/products/1/fltsts'.format(self._host)
-        filters = self._get(url)
+        filters = self._get('1/fltsts')
         print('Pre-filter and Wick: clean in {} hours'.format(filters['fltsts0']))
         if 'wicksts' in filters:
             print('Wick filter: replace in {} hours'.format(filters['wicksts']))
@@ -275,16 +265,9 @@ class AirClient(object):
         print('HEPA filter: replace in {} hours'.format(filters['fltsts1']))
 
     def pair(self, client_id, client_secret):
-        values = {}
-        values['Pair'] = ['FI-AIR-AND', client_id, client_secret]
-        body = encrypt(values, self._session_key)
-        url = 'http://{}/di/v1/products/0/pairing'.format(self._host)
-        req = urllib.request.Request(url=url, data=body, method='PUT')
-        with urllib.request.urlopen(req) as response:
-            resp = response.read()
-            resp = decrypt(resp.decode('ascii'), self._session_key)
-            resp = json.loads(resp)
-            pprint.pprint(resp)
+        values = {'Pair': ['FI-AIR-AND', client_id, client_secret] }
+        resp = self._put('0/pairing', values, encrypted=True)
+        pprint.pprint(resp)
 
 
 def main():
