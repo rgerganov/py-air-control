@@ -17,7 +17,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/rgerganov/py-air-control",
     packages=['pyairctrl'],
-    install_requires=['pycryptodomex>=3.4.7'],
+    install_requires=['pycryptodomex>=3.4.7', 'requests'],
     entry_points={
         'console_scripts': [
             'airctrl=pyairctrl.airctrl:main',
