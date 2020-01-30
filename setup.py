@@ -9,7 +9,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="py-air-control",
-    version="1.0.0",
+    version="1.0.1",
     author="Radoslav Gerganov",
     author_email="rgerganov@gmail.com",
     description="Command line program for controlling Philips air purifiers",
@@ -17,7 +17,10 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/rgerganov/py-air-control",
     packages=['pyairctrl'],
-    install_requires=['pycryptodomex>=3.4.7'],
+    install_requires=[
+        'pycryptodomex>=3.4.7',
+        'CoAPthon3=>1.0.1'
+        ],
     entry_points={
         'console_scripts': [
             'airctrl=pyairctrl.airctrl:main',

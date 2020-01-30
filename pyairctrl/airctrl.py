@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 from Cryptodome.Cipher import AES
 from Cryptodome.Util.Padding import pad, unpad
+from coapthon.client.helperclient import HelperClient
+from coapthon import defines
+from coapthon.messages.request import Request
+from coapthon.utils import generate_random_token
 import urllib.request
 import base64
 import binascii
@@ -13,6 +17,10 @@ import pprint
 import configparser
 import socket
 import xml.etree.ElementTree as ET
+import struct
+import array
+import select
+import time
 
 G = int('A4D1CBD5C3FD34126765A442EFB99905F8104DD258AC507FD6406CFF14266D31266FEA1E5C41564B777E690F5504F213160217B4B01B886A5E91547F9E2749F4D7FBD7D3B9A92EE1909D0D2263F80A76A6A24C087A091F531DBF0A0169B6A28AD662A4D18E73AFA32D779D5918D08BC8858F4DCEF97C2A24855E6EEB22B3B2E5', 16)
 P = int('B10B8F96A080E01DDE92DE5EAE5D54EC52C99FBCFB06A3C69A6A9DCA52D23B616073E28675A23D189838EF1E2EE652C013ECB4AEA906112324975C3CD49B83BFACCBDD7D90C4BD7098488E9C219A73724EFFD6FAE5644738FAA31A4FF55BCCC0A151AF5F0DC8B4BD45BF37DF365C1A65E68CFDA76D4DA708DF1FB2BC2E4A4371', 16)
@@ -287,9 +295,361 @@ class AirClient(object):
             pprint.pprint(resp)
 
 
+class AirClient2:
+    def __init__(self, host, port = 5683):
+        self.server = host
+        self.port = port
+
+    def _create_coap_client(self, host, port):
+        return HelperClient(server=(host, port))
+
+    def _get(self):
+        path ="/sys/dev/status"
+        try:
+            client = self._create_coap_client(self.server, self.port)
+            self._send_hello_sequence(client)
+            # Sending special GET + ACK with observe add-in
+            request = client.mk_request(defines.Codes.GET, path)
+            request.destination = server=(self.server, self.port)
+            request.type = defines.Types["ACK"]
+            request.token = generate_random_token(4)
+            request.observe = 0
+            response = client.send_request(request, None, 0.5)
+        finally:
+            client.stop()
+        
+        if response:
+            return json.loads(response.payload)["state"]["reported"]
+        else:
+            return {}
+
+    def _set(self, key, value):
+        path = "/sys/dev/control"
+        try:
+            client = self._create_coap_client(self.server, self.port)
+            self._send_hello_sequence(client)
+            payload = { "state" : { "desired" : { key: value } } }
+            client.post(path, json.dumps(payload))
+        finally:
+            client.stop()
+        
+    def _send_hello_sequence(self, client):
+        ownIp = self._get_ip()
+
+        header = self._create_icmp_header()
+        data = self._create_icmp_data(ownIp, self.port, self.server, self.port)
+        packet = header + data
+        packet = self._create_icmp_header(self._checksum_icmp(packet)) + data
+
+        socket = AirClient2.Socket(self.server, 'icmp', source=None, options=())
+        socket.send(packet)
+        
+        # that is needed to give device time to open coap port, otherwise it may not respond properly
+        time.sleep(0.5)
+
+        request = Request()
+        request.destination = server=(self.server, self.port)
+        request.code = defines.Codes.EMPTY.number
+        client.send_empty(request)
+
+    class Socket:
+        BUFFER_SIZE = 1024
+        DONT_FRAGMENT = (socket.SOL_IP, 10, 1)           # Option value for raw socket
+
+        def __init__(self, destination, protocol, source=None, options=()):
+            self.destination = socket.gethostbyname(destination)
+            self.protocol = socket.getprotobyname(protocol)
+            if source is not None:
+                raise NotImplementedError('That does not work')
+            
+            if os.geteuid()==0:
+                self.socket = socket.socket(socket.AF_INET, socket.SOCK_RAW, self.protocol)
+            else:
+                self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, self.protocol)
+
+            if options:
+                self.socket.setsockopt(*options)
+
+        def send(self, packet):
+            self.socket.sendto(packet, (self.destination, 0))
+
+        def __del__(self):
+            try:
+                if self.socket:
+                    self.socket.close()
+            except AttributeError:
+                raise AttributeError("Attribute error because of failed socket init. Make sure you have the root privilege."
+                                     " This error may also be caused from DNS resolution problems.")
+
+
+    def _get_ip(self):
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            # doesn't even have to be reachable
+            s.connect(('10.255.255.255', 1))
+            IP = s.getsockname()[0]
+        except:
+            IP = '127.0.0.1'
+        finally:
+            s.close()
+        return IP
+
+    def _checksum_icmp(self, source_string):
+        countTo = (int(len(source_string) / 2)) * 2
+        sum = 0
+        count = 0
+
+        # Handle bytes in pairs (decoding as short ints)
+        loByte = 0
+        hiByte = 0
+        while count < countTo:
+            if (sys.byteorder == "little"):
+                loByte = source_string[count]
+                hiByte = source_string[count + 1]
+            else:
+                loByte = source_string[count + 1]
+                hiByte = source_string[count]
+            sum = sum + (hiByte * 256 + loByte)
+            count += 2
+
+        # Handle last byte if applicable (odd-number of bytes)
+        # Endianness should be irrelevant in this case
+        if countTo < len(source_string): # Check for odd length
+            loByte = source_string[len(source_string) - 1]
+            sum += loByte
+
+        sum &= 0xffffffff # Truncate sum to 32 bits (a variance from ping.c, which
+        # uses signed ints, but overflow is unlikely in ping)
+
+        sum = (sum >> 16) + (sum & 0xffff)    # Add high 16 bits to low 16 bits
+        sum += (sum >> 16)                    # Add carry from above (if any)
+        answer = ~sum & 0xffff                # Invert and truncate to 16 bits
+        answer = socket.htons(answer)
+
+        return answer
+
+
+    def _create_icmp_header(self, checksum=0):
+        ICMP_TYPE = 3
+        ICMP_CODE = 3
+        UNUSED = 0
+        CHECKSUM = checksum
+
+        header = struct.pack(
+            "!BBHI", ICMP_TYPE, ICMP_CODE, CHECKSUM, UNUSED
+        )
+        return header
+
+
+    def _checksum_tcp(self, pkt):
+        return 0 # looks like its irrelevant what we send here
+
+
+    def _create_tcp_data(self, srcIp, dstIp, checksum=0):
+        ip_version = 4
+        ip_vhl = 5
+
+        ip_ver = (ip_version << 4 ) + ip_vhl
+
+        # Differentiate Service Field
+        ip_dsc = 0
+        ip_ecn = 0
+
+        ip_dfc = (ip_dsc << 2 ) + ip_ecn
+
+        # Total Length
+        ip_tol = 214
+
+        # Identification
+        ip_idf = 6190
+
+        # Flags
+        ip_rsv = 0
+        ip_dtf = 0
+        ip_mrf = 0
+        ip_frag_offset = 0
+
+        ip_flg = (ip_rsv << 7) + (ip_dtf << 6) + (ip_mrf << 5) + (ip_frag_offset)
+
+        # Time to live
+        ip_ttl = 255
+
+        # Protocol
+        ip_proto = socket.IPPROTO_UDP
+
+        # Check Sum
+        ip_chk = checksum
+
+        # Source Address
+        ip_saddr = socket.inet_aton(srcIp)
+
+        # Destination Address
+        ip_daddr = socket.inet_aton(dstIp)
+        tcp = struct.pack('!BBHHHBBH4s4s' ,
+            ip_ver,   # IP Version
+            ip_dfc,   # Differentiate Service Feild
+            ip_tol,   # Total Length
+            ip_idf,   # Identification
+            ip_flg,   # Flags
+            ip_ttl,   # Time to leave
+            ip_proto, # protocol
+            ip_chk,   # Checksum
+            ip_saddr, # Source IP
+            ip_daddr  # Destination IP
+        )
+        return tcp
+
+
+    def _create_udp_data(self, srcPort, dstPort):
+        data = 0
+        sport = srcPort
+        dport = dstPort
+        length = 194
+        checksum = 0
+        udp = struct.pack('!HHHH', sport, dport, length, checksum)
+        return udp
+        
+        
+    def _create_icmp_data(self, srcIp, srcPort, dstIp, dstPort):
+        ipv4 = self._create_tcp_data(srcIp, dstIp) + self._create_udp_data(srcPort, dstPort)
+        # currently we dont need to have a correct checksum
+        # ipv4 = self.create_tcp_data(srcIp, dstIp, self.checksum(ipv4)) + self.create_udp_data(srcPort, dstPort)
+        return ipv4
+
+
+    def _dump_status(self, status, debug=False):
+        if debug==True:
+            print("Raw status: " + str(status))
+        if 'name' in status:
+            name = status['name']
+            print('[name]        Name: {}'.format(name))
+        if 'modelid' in status:
+            modelid = status['modelid']
+            print('[modelid]     ModelId: {}'.format(modelid))
+        if 'swversion' in status:
+            swversion = status['swversion']
+            print('[swversion]   Version: {}'.format(swversion))
+        if 'StatusType' in status:
+            statustype = status['StatusType']
+            print('[StatusType]  StatusType: {}'.format(statustype))
+        if 'ota' in status:
+            ota = status['ota']
+            print('[ota]         Over the air updates: {}'.format(ota))
+        if 'Runtime' in status:
+            runtime = status['Runtime']
+            print('[Runtime]     Runtime: {} hours'.format(round(((runtime/(1000*60*60))%24), 2)))
+        if 'pwr' in status:
+            pwr = status['pwr']
+            pwr_str = {'1': 'ON', '0': 'OFF'}
+            pwr = pwr_str.get(pwr, pwr)
+            print('[pwr]         Power: {}'.format(pwr))
+        if 'pm25' in status:
+            pm25 = status['pm25']
+            print('[pm25]        PM25: {}'.format(pm25))
+        if 'rh' in status:
+            rh = status['rh']
+            print('[rh]          Humidity: {}'.format(rh))
+        if 'rhset' in status:
+            rhset = status['rhset']
+            print('[rhset]       Target humidity: {}'.format(rhset))
+        if 'iaql' in status:
+            iaql = status['iaql']
+            print('[iaql]        Allergen index: {}'.format(iaql))
+        if 'temp' in status:
+            temp = status['temp']
+            print('[temp]        Temperature: {}'.format(temp))
+        if 'func' in status:
+            func = status['func']
+            func_str = {'P': 'Purification', 'PH': 'Purification & Humidification'}
+            func = func_str.get(func, func)
+            print('[func]        Function: {}'.format(func))
+        if 'mode' in status:
+            mode = status['mode']
+            mode_str = {'P': 'auto', 'A': 'allergen', 'S': 'sleep', 'M': 'manual', 'B': 'bacteria', 'N': 'night'}
+            mode = mode_str.get(mode, mode)
+            print('[mode]        Mode: {}'.format(mode))
+        if 'om' in status:
+            om = status['om']
+            om_str = {'s': 'silent', 't': 'turbo'}
+            om = om_str.get(om, om)
+            print('[om]          Fan speed: {}'.format(om))
+        if 'aqil' in status:
+            aqil = status['aqil']
+            print('[aqil]        Light brightness: {}'.format(aqil))
+        if 'uil' in status:
+            uil = status['uil']
+            uil_str = {'1': 'ON', '0': 'OFF'}
+            uil = uil_str.get(uil, uil)
+            print('[uil]         Buttons light: {}'.format(uil))
+        if 'ddp' in status:
+            ddp = status['ddp']
+            ddp_str = {'3': 'Humidity', '1': 'PM2.5', '0': 'IAI'}
+            ddp = ddp_str.get(ddp, ddp)
+            print('[ddp]         Used index: {}'.format(ddp))
+        if 'wl' in status:
+            wl = status['wl']
+            print('[wl]          Water level: {}'.format(wl))
+        if 'cl' in status:
+            cl = status['cl']
+            print('[cl]          Child lock: {}'.format(cl))
+        if 'dt' in status:
+            dt = status['dt']
+            if dt != 0:
+                print('[dt]          Timer: {} hours'.format(dt))
+        if 'dtrs' in status:
+            dtrs = status['dtrs']
+            if dtrs != 0:
+                print('[dtrs]        Timer: {} minutes left'.format(dtrs))
+        if 'fltsts0' in status:
+            fltsts0 = status['fltsts0']
+            print('[fltsts0]     Pre-filter and Wick: clean in {} hours'.format(fltsts0))
+        if 'fltsts1' in status:
+            fltsts1 = status['fltsts1']
+            print('[fltsts1]     HEPA filter: replace in {} hours'.format(fltsts1))
+        if 'fltsts2' in status:
+            fltsts2 = status['fltsts2']
+            print('[fltsts2]     Active carbon filter: replace in {} hours'.format(fltsts2))
+        if 'wicksts' in status:
+            wicksts = status['wicksts']
+            print('[wicksts]     Wick filter: replace in {} hours'.format(wicksts))
+        if 'err' in status:
+            err = status['err']
+            if err != 0:
+                err_str = {49408: 'no water', 32768: 'water tank open', 49155: 'pre-filter must be cleaned'}
+                err = err_str.get(err, err)
+                print('-'*20)
+                print('[ERROR] Message: {}'.format(err))
+
+    def set_values(self, values, debug=False):
+        for key in values:
+            self._set(key, values[key])
+
+    def get_status(self, debug=False):
+        status = self._get()
+        return self._dump_status(status, debug=debug)
+
+    def get_wifi(self):
+        print("Getting wifi credentials is currently not supported for protocol version 2 devices. Use the app instead.")
+
+    def set_wifi(self, ssid, pwd):
+        print("Setting wifi credentials is currently not supported for protocol version 2 devices. Use the app instead.")
+
+    def get_firmware(self):
+        status = self._get()
+        print("Software version: {}".format(status["swversion"]))
+        print("Over the air updates: {}".format(status["ota"]))
+
+    def get_filters(self):
+        status = self._get()
+        print('Pre-filter and Wick: clean in {} hours'.format(status["fltsts0"]))
+        print('HEPA filter: replace in {} hours'.format(status["fltsts1"]))
+        print('Active carbon filter: replace in {} hours'.format(status["fltsts2"]))
+        print('Wick filter: replace in {} hours'.format(status["wicksts"]))
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--ipaddr', help='IP address of air purifier')
+    parser.add_argument('--protocol', help='Switch from old to new protocol version for late 2019 devices and newer', choices=['1','2'], default='1')
     parser.add_argument('-d', '--debug', help='show debug output', action='store_true')
     parser.add_argument('--om', help='set fan speed', choices=['1','2','3','s','t'])
     parser.add_argument('--pwr', help='power on/off', choices=['0','1'])
@@ -298,8 +658,8 @@ def main():
     parser.add_argument('--func', help='set function', choices=['P','PH'])
     parser.add_argument('--aqil', help='set light brightness', choices=['0','25','50','75','100'])
     parser.add_argument('--uil', help='set button lights on/off', choices=['0','1'])
-    parser.add_argument('--ddp', help='set indicator pm2.5/IAI', choices=['0','1'])
-    parser.add_argument('--dt', help='set timer', choices=['0','1','2','3','4','5'])
+    parser.add_argument('--ddp', help='set indicator pm2.5/IAI/Humidity (for protocol 2: IAI/pm2.5/Humidity)', choices=['0','1','3'])
+    parser.add_argument('--dt', help='set timer', choices=['0','1','2','3','4','5','6','7','8','9','10','11','12'])
     parser.add_argument('--cl', help='set child lock', choices=['True','False'])
     parser.add_argument('--wifi', help='read wifi options', action='store_true')
     parser.add_argument('--wifi-ssid', help='set wifi ssid')
@@ -311,14 +671,22 @@ def main():
     if args.ipaddr:
         devices = [ {'ip': args.ipaddr} ]
     else:
+        if args.protocol == 2:
+            print('New Air purifiers cannot be autodetected. Try --ipaddr option to force specific IP address.')
+            sys.exit(1)
+
         devices = AirClient.ssdp(debug=args.debug)
         if not devices:
             print('Air purifier not autodetected. Try --ipaddr option to force specific IP address.')
             sys.exit(1)
     
     for device in devices:
-        c = AirClient(device['ip'])
-        c.load_key()
+        if args.protocol == 1:
+            c = AirClient(device['ip'])
+            c.load_key()
+        else:
+            c = AirClient2(device['ip'])    
+        
         if args.wifi:
             c.get_wifi()
             sys.exit(0)
