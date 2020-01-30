@@ -371,7 +371,10 @@ class AirClient2:
                 self.socket.setsockopt(*options)
 
         def send(self, packet):
-            self.socket.sendto(packet, (self.destination, 0))
+            try:
+                self.socket.sendto(packet, (self.destination, 0))
+            except OSError: # That fixes a mac os bug for me: OSError: [Errno 22] Invalid argument
+                None 
 
         def __del__(self):
             try:
