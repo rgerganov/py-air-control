@@ -314,7 +314,7 @@ class AirClient2:
             request.type = defines.Types["ACK"]
             request.token = generate_random_token(4)
             request.observe = 0
-            response = client.send_request(request, None, 0.5)
+            response = client.send_request(request, None, 2)
         finally:
             client.stop()
         
