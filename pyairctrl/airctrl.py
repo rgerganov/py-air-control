@@ -321,7 +321,6 @@ class AirClient2:
         try:
             client = self._create_coap_client(self.server, self.port)
             self._send_hello_sequence(client)
-            # Sending special GET + ACK with observe add-in
             request = client.mk_request(defines.Codes.GET, path)
             request.destination = server=(self.server, self.port)
             request.type = defines.Types["ACK"]
@@ -380,8 +379,6 @@ class AirClient2:
         countTo = (int(len(source_string) / 2)) * 2
         sum = 0
         count = 0
-
-        # Handle bytes in pairs (decoding as short ints)
         loByte = 0
         hiByte = 0
         while count < countTo:
@@ -394,38 +391,29 @@ class AirClient2:
             sum = sum + (hiByte * 256 + loByte)
             count += 2
 
-        # Handle last byte if applicable (odd-number of bytes)
-        # Endianness should be irrelevant in this case
         if countTo < len(source_string): # Check for odd length
             loByte = source_string[len(source_string) - 1]
             sum += loByte
-
-        sum &= 0xffffffff # Truncate sum to 32 bits (a variance from ping.c, which
-        # uses signed ints, but overflow is unlikely in ping)
-
-        sum = (sum >> 16) + (sum & 0xffff)    # Add high 16 bits to low 16 bits
-        sum += (sum >> 16)                    # Add carry from above (if any)
-        answer = ~sum & 0xffff                # Invert and truncate to 16 bits
+            
+        sum &= 0xffffffff
+        sum = (sum >> 16) + (sum & 0xffff)
+        sum += (sum >> 16)
+        answer = ~sum & 0xffff
         answer = socket.htons(answer)
-
         return answer
-
 
     def _create_icmp_header(self, checksum=0):
         ICMP_TYPE = 3
         ICMP_CODE = 3
         UNUSED = 0
         CHECKSUM = checksum
-
         header = struct.pack(
             "!BBHI", ICMP_TYPE, ICMP_CODE, CHECKSUM, UNUSED
         )
         return header
 
-
     def _checksum_tcp(self, pkt):
         return 0 # looks like its irrelevant what we send here
-
 
     def _create_tcp_data(self, srcIp, dstIp, checksum=0):
         ip_version = 4
@@ -481,7 +469,6 @@ class AirClient2:
         )
         return tcp
 
-
     def _create_udp_data(self, srcPort, dstPort):
         data = 0
         sport = srcPort
@@ -491,13 +478,8 @@ class AirClient2:
         udp = struct.pack('!HHHH', sport, dport, length, checksum)
         return udp
         
-        
     def _create_icmp_data(self, srcIp, srcPort, dstIp, dstPort):
-        ipv4 = self._create_tcp_data(srcIp, dstIp) + self._create_udp_data(srcPort, dstPort)
-        # currently we dont need to have a correct checksum
-        # ipv4 = self.create_tcp_data(srcIp, dstIp, self.checksum(ipv4)) + self.create_udp_data(srcPort, dstPort)
-        return ipv4
-
+        return self._create_tcp_data(srcIp, dstIp) + self._create_udp_data(srcPort, dstPort)
 
     def _dump_status(self, status, debug=False):
         if debug==True:
