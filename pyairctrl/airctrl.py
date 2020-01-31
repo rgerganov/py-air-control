@@ -303,6 +303,19 @@ class AirClient2:
     def _create_coap_client(self, host, port):
         return HelperClient(server=(host, port))
 
+    def _send_over_socket(self, destination, packet):
+        protocol = socket.getprotobyname('icmp')
+        if os.geteuid()==0:
+            s = socket.socket(socket.AF_INET, socket.SOCK_RAW, protocol)
+        else:   
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, protocol)
+        try:
+            s.sendto(packet, (destination, 0))
+        except OSError: # That fixes a mac os bug for me: OSError: [Errno 22] Invalid argument
+            None
+        finally:
+            s.close()
+
     def _get(self):
         path ="/sys/dev/status"
         try:
@@ -341,8 +354,7 @@ class AirClient2:
         packet = header + data
         packet = self._create_icmp_header(self._checksum_icmp(packet)) + data
 
-        socket = AirClient2.Socket(self.server, 'icmp', source=None, options=())
-        socket.send(packet)
+        self._send_over_socket(self.server, packet)
         
         # that is needed to give device time to open coap port, otherwise it may not respond properly
         time.sleep(0.5)
@@ -351,39 +363,6 @@ class AirClient2:
         request.destination = server=(self.server, self.port)
         request.code = defines.Codes.EMPTY.number
         client.send_empty(request)
-
-    class Socket:
-        BUFFER_SIZE = 1024
-        DONT_FRAGMENT = (socket.SOL_IP, 10, 1)           # Option value for raw socket
-
-        def __init__(self, destination, protocol, source=None, options=()):
-            self.destination = socket.gethostbyname(destination)
-            self.protocol = socket.getprotobyname(protocol)
-            if source is not None:
-                raise NotImplementedError('That does not work')
-            
-            if os.geteuid()==0:
-                self.socket = socket.socket(socket.AF_INET, socket.SOCK_RAW, self.protocol)
-            else:
-                self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, self.protocol)
-
-            if options:
-                self.socket.setsockopt(*options)
-
-        def send(self, packet):
-            try:
-                self.socket.sendto(packet, (self.destination, 0))
-            except OSError: # That fixes a mac os bug for me: OSError: [Errno 22] Invalid argument
-                None 
-
-        def __del__(self):
-            try:
-                if self.socket:
-                    self.socket.close()
-            except AttributeError:
-                raise AttributeError("Attribute error because of failed socket init. Make sure you have the root privilege."
-                                     " This error may also be caused from DNS resolution problems.")
-
 
     def _get_ip(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
