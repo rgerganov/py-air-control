@@ -11,7 +11,7 @@ import argparse
 import configparser
 import urllib.request
 import urllib.parse
-from pyairctrl.airctrl import AirClient
+from pyairctrl.airctrl import HTTPAirClient
 
 def parse_attr(str, key):
     p = re.compile('%s=\"(.+?)\"' % key)
@@ -201,7 +201,7 @@ class CloudClient(object):
                 print(resp)
 
     def pair(self, ip_addr):
-        cc = AirClient(ip_addr)
+        cc = HTTPAirClient(ip_addr)
         cc.load_key()
         print('Pairing with {} ...'.format(ip_addr))
         pair_secret = 'ad388b4036986421'
