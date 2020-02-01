@@ -3,8 +3,8 @@
 
 Command line application for controlling Philips air purifiers.
 
-It is tested with AC2729 and AC2889 models (before end of 2019) which is covered with protcol version 1.
-As well as AC2729 model (after end of 2019) which is covered with protocol version 2.
+It is tested with several models (AC2729, AC2889, AC1214) which communicate over HTTP.
+There is an experimental support for newer models (after end of 2019) which communicate over the CoAP protocol.
 
 Installation
 ---
@@ -24,7 +24,7 @@ The purifier can be connected to a Wi-Fi network with the following steps:
 ```
 airctrl --ipaddr 192.168.1.1 --wifi-ssid <your_wifi_ssid> --wifi-pwd <your_wifi_password>
 ```
-_Note: this feature is only available in protocol version 1
+_Note: this feature is only available for devices that work over HTTP_
 
 Usage in the local network
 ---
@@ -79,15 +79,13 @@ Active carbon filter: replace in 1565 hours
 HEPA filter: replace in 3965 hours
 ```
 
-
-Using protocol version 2
+Switching the communication protocol
 ---
-Getting infos from protocol version 2 device. You need to specify the IP.
+Use --protocol to switch between communication protocols.
+The following command will try to retrieve the current status using the CoAP protocol:
 ```
-$ airctrl --ipaddr 192.168.0.17 --protocol 2
+$ airctrl --ipaddr 192.168.0.17 --protocol coap
 ```
-Other protocol 1 local network commands work as well.
-
 
 Usage via cloud services
 ---
@@ -122,4 +120,4 @@ Sending event {'pwr': '1'} to device with id 9dcc618e9a82045d
 ```
 
 _Note: all IDs and credentials above are randomly generated and only used for illustration purposes_
-_Note: this feature is only available in protocol version 1
+_Note: this feature is only available for devices that work over HTTP_

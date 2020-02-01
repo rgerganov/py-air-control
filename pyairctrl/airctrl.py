@@ -45,7 +45,7 @@ def decrypt(data, key):
     response = unpad(data, 16, style='pkcs7')[2:]
     return response.decode('ascii')
 
-class AirClient(object):
+class HTTPAirClient(object):
 
     @staticmethod
     def ssdp(timeout=1, repeats=3, debug=False):
@@ -294,7 +294,7 @@ class AirClient(object):
             pprint.pprint(resp)
 
 
-class AirClient2:
+class CoAPAirClient:
     def __init__(self, host, port = 5683):
         self.coapthon_logger = logging.getLogger("coapthon")
         self.coapthon_logger.setLevel("WARN")
@@ -308,7 +308,7 @@ class AirClient2:
         protocol = socket.getprotobyname('icmp')
         if os.geteuid()==0:
             s = socket.socket(socket.AF_INET, socket.SOCK_RAW, protocol)
-        else:   
+        else:
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, protocol)
         try:
             s.sendto(packet, (destination, 0))
@@ -330,7 +330,7 @@ class AirClient2:
             response = client.send_request(request, None, 2)
         finally:
             client.stop()
-        
+
         if response:
             return json.loads(response.payload)["state"]["reported"]
         else:
@@ -345,7 +345,7 @@ class AirClient2:
             client.post(path, json.dumps(payload))
         finally:
             client.stop()
-        
+
     def _send_hello_sequence(self, client):
         ownIp = self._get_ip()
 
@@ -355,7 +355,7 @@ class AirClient2:
         packet = self._create_icmp_header(self._checksum_icmp(packet)) + data
 
         self._send_over_socket(self.server, packet)
-        
+
         # that is needed to give device time to open coap port, otherwise it may not respond properly
         time.sleep(0.5)
 
@@ -478,7 +478,7 @@ class AirClient2:
         checksum = 0
         udp = struct.pack('!HHHH', sport, dport, length, checksum)
         return udp
-        
+
     def _create_icmp_data(self, srcIp, srcPort, dstIp, dstPort):
         return self._create_tcp_data(srcIp, dstIp) + self._create_udp_data(srcPort, dstPort)
 
@@ -598,10 +598,10 @@ class AirClient2:
         return self._dump_status(status, debug=debug)
 
     def get_wifi(self):
-        print("Getting wifi credentials is currently not supported for protocol version 2 devices. Use the app instead.")
+        print("Getting wifi credentials is currently not supported when using CoAP. Use the app instead.")
 
     def set_wifi(self, ssid, pwd):
-        print("Setting wifi credentials is currently not supported for protocol version 2 devices. Use the app instead.")
+        print("Setting wifi credentials is currently not supported when using CoAP. Use the app instead.")
 
     def get_firmware(self):
         status = self._get()
@@ -618,7 +618,7 @@ class AirClient2:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--ipaddr', help='IP address of air purifier')
-    parser.add_argument('--protocol', help='Switch from old to new protocol version for late 2019 devices and newer', choices=['1','2'], default='1')
+    parser.add_argument('--protocol', help='set the communication protocol', choices=['http','coap'], default='http')
     parser.add_argument('-d', '--debug', help='show debug output', action='store_true')
     parser.add_argument('--om', help='set fan speed', choices=['1','2','3','s','t'])
     parser.add_argument('--pwr', help='power on/off', choices=['0','1'])
@@ -627,7 +627,7 @@ def main():
     parser.add_argument('--func', help='set function', choices=['P','PH'])
     parser.add_argument('--aqil', help='set light brightness', choices=['0','25','50','75','100'])
     parser.add_argument('--uil', help='set button lights on/off', choices=['0','1'])
-    parser.add_argument('--ddp', help='set indicator pm2.5/IAI/Humidity (for protocol 2: IAI/pm2.5/Humidity)', choices=['0','1','3'])
+    parser.add_argument('--ddp', help='set indicator pm2.5/IAI/Humidity', choices=['0','1','3'])
     parser.add_argument('--dt', help='set timer', choices=['0','1','2','3','4','5','6','7','8','9','10','11','12'])
     parser.add_argument('--cl', help='set child lock', choices=['True','False'])
     parser.add_argument('--wifi', help='read wifi options', action='store_true')
@@ -640,22 +640,22 @@ def main():
     if args.ipaddr:
         devices = [ {'ip': args.ipaddr} ]
     else:
-        if args.protocol == 2:
-            print('New Air purifiers cannot be autodetected. Try --ipaddr option to force specific IP address.')
+        if args.protocol == 'coap':
+            print('Autodetection is not supported when using CoAP. Use --ipaddr to set an IP address.')
             sys.exit(1)
 
-        devices = AirClient.ssdp(debug=args.debug)
+        devices = HTTPAirClient.ssdp(debug=args.debug)
         if not devices:
             print('Air purifier not autodetected. Try --ipaddr option to force specific IP address.')
             sys.exit(1)
-    
+
     for device in devices:
-        if args.protocol == 1:
-            c = AirClient(device['ip'])
+        if args.protocol == 'http':
+            c = HTTPAirClient(device['ip'])
             c.load_key()
         else:
-            c = AirClient2(device['ip'])    
-        
+            c = CoAPAirClient(device['ip'])
+
         if args.wifi:
             c.get_wifi()
             sys.exit(0)
