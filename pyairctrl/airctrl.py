@@ -20,6 +20,8 @@ import xml.etree.ElementTree as ET
 import struct
 import time
 import logging
+from abc import ABC, abstractmethod
+import hashlib
 
 G = int('A4D1CBD5C3FD34126765A442EFB99905F8104DD258AC507FD6406CFF14266D31266FEA1E5C41564B777E690F5504F213160217B4B01B886A5E91547F9E2749F4D7FBD7D3B9A92EE1909D0D2263F80A76A6A24C087A091F531DBF0A0169B6A28AD662A4D18E73AFA32D779D5918D08BC8858F4DCEF97C2A24855E6EEB22B3B2E5', 16)
 P = int('B10B8F96A080E01DDE92DE5EAE5D54EC52C99FBCFB06A3C69A6A9DCA52D23B616073E28675A23D189838EF1E2EE652C013ECB4AEA906112324975C3CD49B83BFACCBDD7D90C4BD7098488E9C219A73724EFFD6FAE5644738FAA31A4FF55BCCC0A151AF5F0DC8B4BD45BF37DF365C1A65E68CFDA76D4DA708DF1FB2BC2E4A4371', 16)
@@ -615,10 +617,76 @@ class CoAPAirClient:
         print('Active carbon filter: replace in {} hours'.format(status["fltsts2"]))
         print('Wick filter: replace in {} hours'.format(status["wicksts"]))
 
+class HTTPAirClientBase(ABC):
+    def __init__(self, host, port):
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger.setLevel("WARN")
+        self.server = host
+        self.port = port
+
+    def _dump_status(self, status, debug=False):
+        if debug==True:
+            print("Raw status: " + str(status))
+        for key in status:
+            print('[{key}]: {value}'.format(key=key, value=status[key]))
+
+    def get_status(self, debug=False):
+        if debug:
+            self.logger.setLevel("DEBUG")
+        status = self._get()
+        return self._dump_status(status, debug=debug)
+
+    @abstractmethod
+    def _get(self):
+        pass
+
+class Version107Client(HTTPAirClientBase):
+    def __init__(self, host, port=5683):
+        super().__init__(host, port)
+        self.client = self._create_coap_client(self.server, self.port)
+        self._sync()
+
+    def _create_coap_client(self, host, port):
+        return HelperClient(server=(host, port))
+        
+    def _sync(self):
+        self.syncrequest = binascii.hexlify(os.urandom(4)).decode('utf8').upper()
+        self.syncresponse = self.client.post("/sys/dev/sync", self.syncrequest)
+
+    def _decrypt_payload(self, encrypted_payload):
+        encoded_counter=encrypted_payload[0:8]
+        key_and_iv = hashlib.md5(('JiangPan' + encoded_counter).encode()).hexdigest().upper()
+        half_keylen=len(key_and_iv) // 2
+        secret_key = key_and_iv[0:half_keylen]
+        iv = key_and_iv[half_keylen:]
+        encoded_message = encrypted_payload[8:-64].upper()
+        decoded_message = AES.new(bytes(secret_key.encode('utf8')), AES.MODE_CBC, bytes(iv.encode('utf8'))).decrypt(bytes.fromhex(encoded_message))
+        unpaded_message = unpad(decoded_message, 16, style='pkcs7')
+        return unpaded_message.decode('utf8')
+
+    def _get(self):
+        path ="/sys/dev/status"
+        try:
+            request = self.client.mk_request(defines.Codes.GET, path)
+            request.destination = server=(self.server, self.port)
+            request.type = defines.Types["ACK"]
+            request.token = generate_random_token(4)
+            request.observe = 0
+            response = self.client.send_request(request, None, 2)
+            encrypted_payload = response.payload
+            decrypted_payload = self._decrypt_payload(encrypted_payload)
+        finally:
+            self.client.stop()
+
+        if response:
+            return json.loads(decrypted_payload)["state"]["reported"]
+        else:
+            return {}
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--ipaddr', help='IP address of air purifier')
-    parser.add_argument('--protocol', help='set the communication protocol', choices=['http','coap'], default='http')
+    parser.add_argument('--version', help='set the version of your device ', choices=['0.1.0','0.2.1', '1.0.7'], default='0.1.0')
     parser.add_argument('-d', '--debug', help='show debug output', action='store_true')
     parser.add_argument('--om', help='set fan speed', choices=['1','2','3','s','t'])
     parser.add_argument('--pwr', help='power on/off', choices=['0','1'])
@@ -640,7 +708,7 @@ def main():
     if args.ipaddr:
         devices = [ {'ip': args.ipaddr} ]
     else:
-        if args.protocol == 'coap':
+        if args.version in [ '0.2.1', '1.0.7']:
             print('Autodetection is not supported when using CoAP. Use --ipaddr to set an IP address.')
             sys.exit(1)
 
@@ -650,11 +718,13 @@ def main():
             sys.exit(1)
 
     for device in devices:
-        if args.protocol == 'http':
+        if args.version == '0.1.0':
             c = HTTPAirClient(device['ip'])
             c.load_key()
-        else:
+        elif args.version == '0.2.1':
             c = CoAPAirClient(device['ip'])
+        elif args.version == '1.0.7':
+            c = Version107Client(device['ip'])
 
         if args.wifi:
             c.get_wifi()
