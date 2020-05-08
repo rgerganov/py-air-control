@@ -665,7 +665,7 @@ class Version107Client(HTTPAirClientBase):
         
     def _sync(self):
         self.syncrequest = binascii.hexlify(os.urandom(4)).decode('utf8').upper()
-        self.syncresponse = self.client.post("/sys/dev/sync", self.syncrequest).payload
+        self.client_key = self.client.post("/sys/dev/sync", self.syncrequest).payload
 
     def _decrypt_payload(self, encrypted_payload):
         encoded_counter=encrypted_payload[0:8]
@@ -676,12 +676,15 @@ class Version107Client(HTTPAirClientBase):
         return unpaded_message.decode('utf8')
 
     def _encrypt_payload(self, payload):
-        id='{:x}'.format(int(self.syncresponse, 16)+1).upper()
-        aes=self._handle_AES(id)
+        self._update_client_key()  
+        aes=self._handle_AES(self.client_key)
         paded_message = pad(bytes(payload.encode('utf8')), 16, style='pkcs7')
         encoded_message = aes.encrypt(paded_message).hex().upper()
-        digest=hashlib.sha256(bytes((id + encoded_message).encode('utf8'))).hexdigest().upper()
-        return id + encoded_message + digest
+        digest=hashlib.sha256(bytes((self.client_key + encoded_message).encode('utf8'))).hexdigest().upper()
+        return self.client_key + encoded_message + digest
+
+    def _update_client_key(self):
+        self.client_key='{:x}'.format(int(self.client_key, 16)+1).upper()
 
     def _handle_AES(self, id):
         key_and_iv = hashlib.md5((self.SECRET_KEY + id).encode()).hexdigest().upper()
@@ -698,8 +701,8 @@ class Version107Client(HTTPAirClientBase):
             response = self.client.send_request(request, None, 2)
             encrypted_payload = response.payload
             decrypted_payload = self._decrypt_payload(encrypted_payload)
-        except:
-            print("Unexpected error:", sys.exc_info()[0])
+        except Exception as e:
+            print("Unexpected error:{}".format(e))
 
         if response:
             return json.loads(decrypted_payload)["state"]["reported"]
@@ -711,9 +714,10 @@ class Version107Client(HTTPAirClientBase):
         try:
             payload = {"state":{"desired":{"CommandType":"app","DeviceId":"","EnduserId":"", key: value }}}
             encrypted_payload = self._encrypt_payload(json.dumps(payload))
-            self.client.post(path, encrypted_payload, None, None)
-        except:
-            print("Unexpected error:", sys.exc_info()[0])
+            response = self.client.post(path, encrypted_payload)
+            print(response)
+        except Exception as e:
+            print("Unexpected error:{}".format(e))
 
 def main():
     parser = argparse.ArgumentParser()
