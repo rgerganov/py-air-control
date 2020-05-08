@@ -657,6 +657,9 @@ class Version107Client(HTTPAirClientBase):
         self.SECRET_KEY='JiangPan'
         self._sync()
 
+    def __del__(self):
+        self.client.stop()
+
     def _create_coap_client(self, host, port):
         return HelperClient(server=(host, port))
         
@@ -695,8 +698,8 @@ class Version107Client(HTTPAirClientBase):
             response = self.client.send_request(request, None, 2)
             encrypted_payload = response.payload
             decrypted_payload = self._decrypt_payload(encrypted_payload)
-        finally:
-            self.client.stop()
+        except:
+            print("Unexpected error:", sys.exc_info()[0])
 
         if response:
             return json.loads(decrypted_payload)["state"]["reported"]
@@ -709,8 +712,8 @@ class Version107Client(HTTPAirClientBase):
             payload = {"state":{"desired":{"CommandType":"app","DeviceId":"","EnduserId":"", key: value }}}
             encrypted_payload = self._encrypt_payload(json.dumps(payload))
             self.client.post(path, encrypted_payload, None, None)
-        finally:
-            self.client.stop()
+        except:
+            print("Unexpected error:", sys.exc_info()[0])
 
 def main():
     parser = argparse.ArgumentParser()
