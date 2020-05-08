@@ -636,14 +636,25 @@ class HTTPAirClientBase(ABC):
         status = self._get()
         return self._dump_status(status, debug=debug)
 
+    def set_values(self, values, debug=False):
+        if debug:
+            self.logger.setLevel("DEBUG")
+        for key in values:
+            self._set(key, values[key])
+
     @abstractmethod
     def _get(self):
+        pass
+
+    @abstractmethod
+    def _set(self, key, value):
         pass
 
 class Version107Client(HTTPAirClientBase):
     def __init__(self, host, port=5683):
         super().__init__(host, port)
         self.client = self._create_coap_client(self.server, self.port)
+        self.SECRET_KEY='JiangPan'
         self._sync()
 
     def _create_coap_client(self, host, port):
@@ -651,26 +662,35 @@ class Version107Client(HTTPAirClientBase):
         
     def _sync(self):
         self.syncrequest = binascii.hexlify(os.urandom(4)).decode('utf8').upper()
-        self.syncresponse = self.client.post("/sys/dev/sync", self.syncrequest)
+        self.syncresponse = self.client.post("/sys/dev/sync", self.syncrequest).payload
 
     def _decrypt_payload(self, encrypted_payload):
         encoded_counter=encrypted_payload[0:8]
-        key_and_iv = hashlib.md5(('JiangPan' + encoded_counter).encode()).hexdigest().upper()
+        aes=self._handle_AES(encoded_counter)
+        encoded_message = encrypted_payload[8:-64].upper()
+        decoded_message = aes.decrypt(bytes.fromhex(encoded_message))
+        unpaded_message = unpad(decoded_message, 16, style='pkcs7')
+        return unpaded_message.decode('utf8')
+
+    def _encrypt_payload(self, payload):
+        id='{:x}'.format(int(self.syncresponse, 16)+1).upper()
+        aes=self._handle_AES(id)
+        paded_message = pad(bytes(payload.encode('utf8')), 16, style='pkcs7')
+        encoded_message = aes.encrypt(paded_message).hex().upper()
+        digest=hashlib.sha256(bytes((id + encoded_message).encode('utf8'))).hexdigest().upper()
+        return id + encoded_message + digest
+
+    def _handle_AES(self, id):
+        key_and_iv = hashlib.md5((self.SECRET_KEY + id).encode()).hexdigest().upper()
         half_keylen=len(key_and_iv) // 2
         secret_key = key_and_iv[0:half_keylen]
         iv = key_and_iv[half_keylen:]
-        encoded_message = encrypted_payload[8:-64].upper()
-        decoded_message = AES.new(bytes(secret_key.encode('utf8')), AES.MODE_CBC, bytes(iv.encode('utf8'))).decrypt(bytes.fromhex(encoded_message))
-        unpaded_message = unpad(decoded_message, 16, style='pkcs7')
-        return unpaded_message.decode('utf8')
+        return AES.new(bytes(secret_key.encode('utf8')), AES.MODE_CBC, bytes(iv.encode('utf8')))
 
     def _get(self):
         path ="/sys/dev/status"
         try:
             request = self.client.mk_request(defines.Codes.GET, path)
-            request.destination = server=(self.server, self.port)
-            request.type = defines.Types["ACK"]
-            request.token = generate_random_token(4)
             request.observe = 0
             response = self.client.send_request(request, None, 2)
             encrypted_payload = response.payload
@@ -682,6 +702,15 @@ class Version107Client(HTTPAirClientBase):
             return json.loads(decrypted_payload)["state"]["reported"]
         else:
             return {}
+
+    def _set(self, key, value):
+        path = "/sys/dev/control"
+        try:
+            payload = {"state":{"desired":{"CommandType":"app","DeviceId":"","EnduserId":"", key: value }}}
+            encrypted_payload = self._encrypt_payload(json.dumps(payload))
+            self.client.post(path, encrypted_payload, None, None)
+        finally:
+            self.client.stop()
 
 def main():
     parser = argparse.ArgumentParser()
