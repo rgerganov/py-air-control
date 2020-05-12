@@ -617,6 +617,9 @@ class CoAPAirClient:
         print('Active carbon filter: replace in {} hours'.format(status["fltsts2"]))
         print('Wick filter: replace in {} hours'.format(status["wicksts"]))
 
+class WrongDigestException(Exception):
+    pass
+
 class HTTPAirClientBase(ABC):
     def __init__(self, host, port):
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -634,7 +637,8 @@ class HTTPAirClientBase(ABC):
         if debug:
             self.logger.setLevel("DEBUG")
         status = self._get()
-        return self._dump_status(status, debug=debug)
+        if status is not None:
+            return self._dump_status(status, debug=debug)
 
     def set_values(self, values, debug=False):
         if debug:
@@ -671,6 +675,10 @@ class Version107Client(HTTPAirClientBase):
         encoded_counter=encrypted_payload[0:8]
         aes=self._handle_AES(encoded_counter)
         encoded_message = encrypted_payload[8:-64].upper()
+        digest=encrypted_payload[-64:]
+        calculated_digest=self._create_digest(encoded_counter, encoded_message)
+        if (digest != calculated_digest):
+            raise WrongDigestException
         decoded_message = aes.decrypt(bytes.fromhex(encoded_message))
         unpaded_message = unpad(decoded_message, 16, style='pkcs7')
         return unpaded_message.decode('utf8')
@@ -680,8 +688,12 @@ class Version107Client(HTTPAirClientBase):
         aes=self._handle_AES(self.client_key)
         paded_message = pad(bytes(payload.encode('utf8')), 16, style='pkcs7')
         encoded_message = aes.encrypt(paded_message).hex().upper()
-        digest=hashlib.sha256(bytes((self.client_key + encoded_message).encode('utf8'))).hexdigest().upper()
+        digest=self._create_digest(self.client_key, encoded_message)
         return self.client_key + encoded_message + digest
+
+    def _create_digest(self, id, encoded_message):
+        digest=hashlib.sha256(bytes((id + encoded_message).encode('utf8'))).hexdigest().upper()
+        return digest
 
     def _update_client_key(self):
         self.client_key='{:x}'.format(int(self.client_key, 16)+1).upper()
@@ -695,16 +707,20 @@ class Version107Client(HTTPAirClientBase):
 
     def _get(self):
         path ="/sys/dev/status"
+        decrypted_payload = None
+
         try:
             request = self.client.mk_request(defines.Codes.GET, path)
             request.observe = 0
             response = self.client.send_request(request, None, 2)
             encrypted_payload = response.payload
             decrypted_payload = self._decrypt_payload(encrypted_payload)
+        except WrongDigestException:
+            print("Message from device got corrupted")
         except Exception as e:
             print("Unexpected error:{}".format(e))
 
-        if response:
+        if decrypted_payload is not None:
             return json.loads(decrypted_payload)["state"]["reported"]
         else:
             return {}
