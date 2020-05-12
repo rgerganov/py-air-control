@@ -621,11 +621,12 @@ class WrongDigestException(Exception):
     pass
 
 class HTTPAirClientBase(ABC):
-    def __init__(self, host, port):
+    def __init__(self, host, port, debug=False):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.setLevel("WARN")
         self.server = host
         self.port = port
+        self.debug = debug
 
     def _dump_status(self, status, debug=False):
         if debug==True:
@@ -655,8 +656,8 @@ class HTTPAirClientBase(ABC):
         pass
 
 class Version107Client(HTTPAirClientBase):
-    def __init__(self, host, port=5683):
-        super().__init__(host, port)
+    def __init__(self, host, port=5683, debug=False):
+        super().__init__(host, port, debug)
         self.client = self._create_coap_client(self.server, self.port)
         self.SECRET_KEY='JiangPan'
         self._sync()
@@ -731,7 +732,8 @@ class Version107Client(HTTPAirClientBase):
             payload = {"state":{"desired":{"CommandType":"app","DeviceId":"","EnduserId":"", key: value }}}
             encrypted_payload = self._encrypt_payload(json.dumps(payload))
             response = self.client.post(path, encrypted_payload)
-            print(response)
+            if (self.debug):
+                print(response)
         except Exception as e:
             print("Unexpected error:{}".format(e))
 
@@ -776,7 +778,7 @@ def main():
         elif args.version == '0.2.1':
             c = CoAPAirClient(device['ip'])
         elif args.version == '1.0.7':
-            c = Version107Client(device['ip'])
+            c = Version107Client(device['ip'], debug=args.debug)
 
         if args.wifi:
             c.get_wifi()
