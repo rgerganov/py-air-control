@@ -617,6 +617,41 @@ class CoAPAirClient:
         print('Active carbon filter: replace in {} hours'.format(status["fltsts2"]))
         print('Wick filter: replace in {} hours'.format(status["wicksts"]))
 
+statusTransformer = {
+    "name" : ("Name: {}", None),
+    "type" : ("Type: {}", None),
+    "modelid" : ("ModelId: {}", None),
+    "swversion" : ("Version: {}", None),
+    "StatusType" : ("StatusType: {}", None),
+    "ota" : ("Over the air updates: {}", None),
+    "StatusType" : ("StatusType: {}", None),
+    "Runtime" : ("Runtime: {} hours", lambda runtime: round(((runtime/(1000*60*60))%24), 2)),
+    "pwr" : ("Power: {}", lambda pwr: {'1': 'ON', '0': 'OFF'}.get(pwr, pwr)),
+    "pm25" : ("PM25: {}", None),
+    "rh" : ("Humidity: {}", None),
+    "rhset" : ("Target humidity: {}", None),
+    "iaql" : ("Allergen index: {}", None),
+    "temp" : ("Temperature: {}", None),
+    "func" : ("Function: {}", lambda func: {'P': 'Purification', 'PH': 'Purification & Humidification'}.get(func, func)),
+    "mode" : ("Mode: {}", lambda mode: {'P': 'auto', 'A': 'allergen', 'S': 'sleep', 'M': 'manual', 'B': 'bacteria', 'N': 'night'}.get(mode, mode)),
+    "om" : ("Fan speed: {}", lambda om: {'s': 'silent', 't': 'turbo'}.get(om, om)),
+    "aqil" : ("Light brightness: {}", None),
+    "aqit" : ("Air quality notification threshold: {}", None),
+    "uil" : ("Buttons light: {}", lambda uil: {'1': 'ON', '0': 'OFF'}.get(uil, uil)),
+    "ddp" : ("Used index: {}", lambda ddp: {'3': 'Humidity', '1': 'PM2.5', '0': 'IAI'}.get(ddp, ddp)),
+    "wl" : ("Water level: {}", None),
+    "cl" : ("Child lock: {}", None),
+    "dt" : ("Timer: {} hours", lambda dt: None if dt == 0 else dt),
+    "dtrs" : ("Timer: {} minutes left", lambda dtrs: None if dtrs == 0 else dtrs),
+    "fltt1" : ("HEPA filter type: {}", lambda fltt1: {'A3': 'NanoProtect Filter Series 3 (FY2422)'}.get(fltt1, fltt1)),
+    "fltt2" : ("Active carbon filter type: {}", lambda fltt2: {'C7': 'NanoProtect Filter AC (FY2420)'}.get(fltt2, fltt2)),
+    "fltsts0" : ("Pre-filter and Wick: clean in {} hours", None),
+    "fltsts1" : ("HEPA filter: replace in {} hours", None),
+    "fltsts2" : ("Active carbon filter: replace in {} hours", None),
+    "wicksts" : ("Wick filter: replace in {} hours", None),
+    "err" : ("[ERROR] Message: {}", lambda err: None if err == 0 else {49408: 'no water', 32768: 'water tank open', 49155: 'pre-filter must be cleaned'}.get(err, err)),
+}
+
 class WrongDigestException(Exception):
     pass
 
@@ -632,7 +667,19 @@ class HTTPAirClientBase(ABC):
         if debug==True:
             print("Raw status: " + str(status))
         for key in status:
-            print('[{key}]: {value}'.format(key=key, value=status[key]))
+            current_value=status[key]
+            
+            if key in statusTransformer:
+                info = statusTransformer[key]
+                if not info[1] is None:
+                    current_value = info[1](current_value)
+                    if current_value is None:
+                        continue
+                name_and_value = info[0].format(current_value)
+            else:
+                name_and_value = '{}: {}'.format(key, current_value)
+
+            print('[{key}]\t{name_and_value}'.format(key=key, name_and_value=name_and_value).expandtabs(30))
 
     def get_status(self, debug=False):
         if debug:
