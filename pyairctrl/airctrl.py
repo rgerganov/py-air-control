@@ -125,7 +125,7 @@ class AirClientBase(ABC):
     def set_wifi(self, ssid, pwd):
         print("Setting wifi credentials is currently not supported when using CoAP. Use the app instead.")
 
-class HTTPAirClient(object):
+class HTTPAirClient(AirClientBase):
 
     @staticmethod
     def ssdp(timeout=1, repeats=3, debug=False):
@@ -165,13 +165,13 @@ class HTTPAirClient(object):
             pprint.pprint(resp)
         return resp
 
-    def __init__(self, host):
-        self._host = host
+    def __init__(self, host, port=80, debug=False):
+        super().__init__(host, port, debug)
         self._session_key = None
 
     def _get_key(self):
         print('Exchanging secret key with the device ...')
-        url = 'http://{}/di/v1/products/0/security'.format(self._host)
+        url = 'http://{}/di/v1/products/0/security'.format(self.server)
         a = random.getrandbits(256)
         A = pow(G, a, P)
         data = json.dumps({'diffie': format(A, 'x')})
@@ -195,7 +195,7 @@ class HTTPAirClient(object):
         if 'keys' not in config.sections():
             config['keys'] = {}
         hex_key = binascii.hexlify(self._session_key).decode('ascii')
-        config['keys'][self._host] = hex_key
+        config['keys'][self.server] = hex_key
         print("Saving session_key {} to {}".format(hex_key, fpath))
         with open(fpath, 'w') as f:
             config.write(f)
@@ -205,8 +205,8 @@ class HTTPAirClient(object):
         if os.path.isfile(fpath):
             config = configparser.ConfigParser()
             config.read(fpath)
-            if 'keys' in config and self._host in config['keys']:
-                hex_key = config['keys'][self._host]
+            if 'keys' in config and self.server in config['keys']:
+                hex_key = config['keys'][self.server]
                 self._session_key = bytes.fromhex(hex_key)
                 self._check_key()
             else:
@@ -215,12 +215,12 @@ class HTTPAirClient(object):
             self._get_key()
 
     def _check_key(self):
-        url = 'http://{}/di/v1/products/1/air'.format(self._host)
+        url = 'http://{}/di/v1/products/1/air'.format(self.server)
         self._get(url)
 
     def set_values(self, values, debug=False):
         body = encrypt(values, self._session_key)
-        url = 'http://{}/di/v1/products/1/air'.format(self._host)
+        url = 'http://{}/di/v1/products/1/air'.format(self.server)
         req = urllib.request.Request(url=url, data=body, method='PUT')
         try:
             with urllib.request.urlopen(req) as response:
@@ -240,7 +240,7 @@ class HTTPAirClient(object):
             values['password'] = pwd
         pprint.pprint(values)
         body = encrypt(values, self._session_key)
-        url = 'http://{}/di/v1/products/0/wifi'.format(self._host)
+        url = 'http://{}/di/v1/products/0/wifi'.format(self.server)
         req = urllib.request.Request(url=url, data=body, method='PUT')
         with urllib.request.urlopen(req) as response:
             resp = response.read()
@@ -338,22 +338,22 @@ class HTTPAirClient(object):
                 print('Error: {}'.format(err))
 
     def get_status(self, debug=False):
-        url = 'http://{}/di/v1/products/1/air'.format(self._host)
+        url = 'http://{}/di/v1/products/1/air'.format(self.server)
         status = self._get(url)
         self._dump_status(status, debug=debug)
 
     def get_wifi(self):
-        url = 'http://{}/di/v1/products/0/wifi'.format(self._host)
+        url = 'http://{}/di/v1/products/0/wifi'.format(self.server)
         wifi = self._get(url)
         pprint.pprint(wifi)
 
     def get_firmware(self):
-        url = 'http://{}/di/v1/products/0/firmware'.format(self._host)
+        url = 'http://{}/di/v1/products/0/firmware'.format(self.server)
         firmware = self._get(url)
         pprint.pprint(firmware)
 
     def get_filters(self):
-        url = 'http://{}/di/v1/products/1/fltsts'.format(self._host)
+        url = 'http://{}/di/v1/products/1/fltsts'.format(self.server)
         filters = self._get(url)
         print('Pre-filter and Wick: clean in {} hours'.format(filters['fltsts0']))
         if 'wicksts' in filters:
@@ -365,7 +365,7 @@ class HTTPAirClient(object):
         values = {}
         values['Pair'] = ['FI-AIR-AND', client_id, client_secret]
         body = encrypt(values, self._session_key)
-        url = 'http://{}/di/v1/products/0/pairing'.format(self._host)
+        url = 'http://{}/di/v1/products/0/pairing'.format(self.server)
         req = urllib.request.Request(url=url, data=body, method='PUT')
         with urllib.request.urlopen(req) as response:
             resp = response.read()
