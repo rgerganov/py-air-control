@@ -47,6 +47,41 @@ def decrypt(data, key):
     response = unpad(data, 16, style='pkcs7')[2:]
     return response.decode('ascii')
 
+statusTransformer = {
+    "name" : ("Name: {}", None),
+    "type" : ("Type: {}", None),
+    "modelid" : ("ModelId: {}", None),
+    "swversion" : ("Version: {}", None),
+    "StatusType" : ("StatusType: {}", None),
+    "ota" : ("Over the air updates: {}", None),
+    "StatusType" : ("StatusType: {}", None),
+    "Runtime" : ("Runtime: {} hours", lambda runtime: round(((runtime/(1000*60*60))%24), 2)),
+    "pwr" : ("Power: {}", lambda pwr: {'1': 'ON', '0': 'OFF'}.get(pwr, pwr)),
+    "pm25" : ("PM25: {}", None),
+    "rh" : ("Humidity: {}", None),
+    "rhset" : ("Target humidity: {}", None),
+    "iaql" : ("Allergen index: {}", None),
+    "temp" : ("Temperature: {}", None),
+    "func" : ("Function: {}", lambda func: {'P': 'Purification', 'PH': 'Purification & Humidification'}.get(func, func)),
+    "mode" : ("Mode: {}", lambda mode: {'P': 'auto', 'A': 'allergen', 'S': 'sleep', 'M': 'manual', 'B': 'bacteria', 'N': 'night'}.get(mode, mode)),
+    "om" : ("Fan speed: {}", lambda om: {'s': 'silent', 't': 'turbo'}.get(om, om)),
+    "aqil" : ("Light brightness: {}", None),
+    "aqit" : ("Air quality notification threshold: {}", None),
+    "uil" : ("Buttons light: {}", lambda uil: {'1': 'ON', '0': 'OFF'}.get(uil, uil)),
+    "ddp" : ("Used index: {}", lambda ddp: {'3': 'Humidity', '1': 'PM2.5', '0': 'IAI'}.get(ddp, ddp)),
+    "wl" : ("Water level: {}", None),
+    "cl" : ("Child lock: {}", None),
+    "dt" : ("Timer: {} hours", lambda dt: None if dt == 0 else dt),
+    "dtrs" : ("Timer: {} minutes left", lambda dtrs: None if dtrs == 0 else dtrs),
+    "fltt1" : ("HEPA filter type: {}", lambda fltt1: {'A3': 'NanoProtect Filter Series 3 (FY2422)'}.get(fltt1, fltt1)),
+    "fltt2" : ("Active carbon filter type: {}", lambda fltt2: {'C7': 'NanoProtect Filter AC (FY2420)'}.get(fltt2, fltt2)),
+    "fltsts0" : ("Pre-filter and Wick: clean in {} hours", None),
+    "fltsts1" : ("HEPA filter: replace in {} hours", None),
+    "fltsts2" : ("Active carbon filter: replace in {} hours", None),
+    "wicksts" : ("Wick filter: replace in {} hours", None),
+    "err" : ("[ERROR] Message: {}", lambda err: None if err == 0 else {49408: 'no water', 32768: 'water tank open', 49155: 'pre-filter must be cleaned'}.get(err, err)),
+}
+
 class AirClientBase(ABC):
     def __init__(self, host, port, debug=False):
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -118,12 +153,6 @@ class AirClientBase(ABC):
         if "fltsts1" in status: print(self._get_info_for_key("fltsts1", status["fltsts1"]))
         if "fltsts2" in status: print(self._get_info_for_key("fltsts2", status["fltsts2"]))
         if "wicksts" in status: print(self._get_info_for_key("wicksts", status["wicksts"]))
-
-    def get_wifi(self):
-        print("Getting wifi credentials is currently not supported when using CoAP. Use the app instead.")
-
-    def set_wifi(self, ssid, pwd):
-        print("Setting wifi credentials is currently not supported when using CoAP. Use the app instead.")
 
 class HTTPAirClient(AirClientBase):
 
@@ -263,80 +292,6 @@ class HTTPAirClient(AirClientBase):
             self._get_key()
             return self._get_once(url)
 
-    def _dump_status(self, status, debug=False):
-        if debug:
-            pprint.pprint(status)
-            print()
-        if 'pwr' in status:
-            pwr = status['pwr']
-            pwr_str = {'1': 'ON', '0': 'OFF'}
-            pwr = pwr_str.get(pwr, pwr)
-            print('[pwr]   Power: {}'.format(pwr))
-        if 'pm25' in status:
-            pm25 = status['pm25']
-            print('[pm25]  PM25: {}'.format(pm25))
-        if 'rh' in status:
-            rh = status['rh']
-            print('[rh]    Humidity: {}'.format(rh))
-        if 'rhset' in status:
-            rhset = status['rhset']
-            print('[rhset] Target humidity: {}'.format(rhset))
-        if 'iaql' in status:
-            iaql = status['iaql']
-            print('[iaql]  Allergen index: {}'.format(iaql))
-        if 'temp' in status:
-            temp = status['temp']
-            print('[temp]  Temperature: {}'.format(temp))
-        if 'func' in status:
-            func = status['func']
-            func_str = {'P': 'Purification', 'PH': 'Purification & Humidification'}
-            func = func_str.get(func, func)
-            print('[func]  Function: {}'.format(func))
-        if 'mode' in status:
-            mode = status['mode']
-            mode_str = {'P': 'auto', 'A': 'allergen', 'S': 'sleep', 'M': 'manual', 'B': 'bacteria', 'N': 'night'}
-            mode = mode_str.get(mode, mode)
-            print('[mode]  Mode: {}'.format(mode))
-        if 'om' in status:
-            om = status['om']
-            om_str = {'s': 'silent', 't': 'turbo'}
-            om = om_str.get(om, om)
-            print('[om]    Fan speed: {}'.format(om))
-        if 'aqil' in status:
-            aqil = status['aqil']
-            print('[aqil]  Light brightness: {}'.format(aqil))
-        if 'uil' in status:
-            uil = status['uil']
-            uil_str = {'1': 'ON', '0': 'OFF'}
-            uil = uil_str.get(uil, uil)
-            print('[uil]   Buttons light: {}'.format(uil))
-        if 'ddp' in status:
-            ddp = status['ddp']
-            ddp_str = {'1': 'PM2.5', '0': 'IAI'}
-            ddp = ddp_str.get(ddp, ddp)
-            print('[ddp]   Used index: {}'.format(ddp))
-        if 'wl' in status:
-            wl = status['wl']
-            print('[wl]    Water level: {}'.format(wl))
-        if 'cl' in status:
-            cl = status['cl']
-            print('[cl]    Child lock: {}'.format(cl))
-        if 'dt' in status:
-            dt = status['dt']
-            if dt != 0:
-                print('[dt]    Timer: {} hours'.format(dt))
-        if 'dtrs' in status:
-            dtrs = status['dtrs']
-            if dtrs != 0:
-                print('[dtrs]  Timer: {} minutes left'.format(dtrs))
-        if 'err' in status:
-            err = status['err']
-            if err != 0:
-                err_str = {49408: 'no water', 32768: 'water tank open', 49155: 'pre-filter must be cleaned'}
-                err = err_str.get(err, err)
-                print('-'*20)
-                print('Error: {}'.format(err))
-
     def get_status(self, debug=False):
         url = 'http://{}/di/v1/products/1/air'.format(self.server)
         status = self._get(url)
@@ -373,16 +328,24 @@ class HTTPAirClient(AirClientBase):
             resp = json.loads(resp)
             pprint.pprint(resp)
 
+class CoAPAirClient(AirClientBase):
+    def __init__(self, host, port = 5683, debug=False):
+        super().__init__(host, port, debug)
+        self.client = self._create_coap_client(self.server, self.port)
 
-class CoAPAirClient:
-    def __init__(self, host, port = 5683):
-        self.coapthon_logger = logging.getLogger("coapthon")
-        self.coapthon_logger.setLevel("WARN")
-        self.server = host
-        self.port = port
+    def get_wifi(self):
+        print("Getting wifi credentials is currently not supported when using CoAP. Use the app instead.")
+
+    def set_wifi(self, ssid, pwd):
+        print("Setting wifi credentials is currently not supported when using CoAP. Use the app instead.")
 
     def _create_coap_client(self, host, port):
         return HelperClient(server=(host, port))
+
+class Version021Client(CoAPAirClient):
+    def __init__(self, host, port=5683, debug=False):
+        super().__init__(host, port, debug)
+        self._send_hello_sequence(client)
 
     def _send_over_socket(self, destination, packet):
         protocol = socket.getprotobyname('icmp')
@@ -400,8 +363,6 @@ class CoAPAirClient:
     def _get(self):
         path ="/sys/dev/status"
         try:
-            client = self._create_coap_client(self.server, self.port)
-            self._send_hello_sequence(client)
             request = client.mk_request(defines.Codes.GET, path)
             request.destination = server=(self.server, self.port)
             request.type = defines.Types["ACK"]
@@ -562,181 +523,12 @@ class CoAPAirClient:
     def _create_icmp_data(self, srcIp, srcPort, dstIp, dstPort):
         return self._create_tcp_data(srcIp, dstIp) + self._create_udp_data(srcPort, dstPort)
 
-    def _dump_status(self, status, debug=False):
-        if debug==True:
-            print("Raw status: " + str(status))
-        if 'name' in status:
-            name = status['name']
-            print('[name]        Name: {}'.format(name))
-        if 'modelid' in status:
-            modelid = status['modelid']
-            print('[modelid]     ModelId: {}'.format(modelid))
-        if 'swversion' in status:
-            swversion = status['swversion']
-            print('[swversion]   Version: {}'.format(swversion))
-        if 'StatusType' in status:
-            statustype = status['StatusType']
-            print('[StatusType]  StatusType: {}'.format(statustype))
-        if 'ota' in status:
-            ota = status['ota']
-            print('[ota]         Over the air updates: {}'.format(ota))
-        if 'Runtime' in status:
-            runtime = status['Runtime']
-            print('[Runtime]     Runtime: {} hours'.format(round(((runtime/(1000*60*60))%24), 2)))
-        if 'pwr' in status:
-            pwr = status['pwr']
-            pwr_str = {'1': 'ON', '0': 'OFF'}
-            pwr = pwr_str.get(pwr, pwr)
-            print('[pwr]         Power: {}'.format(pwr))
-        if 'pm25' in status:
-            pm25 = status['pm25']
-            print('[pm25]        PM25: {}'.format(pm25))
-        if 'rh' in status:
-            rh = status['rh']
-            print('[rh]          Humidity: {}'.format(rh))
-        if 'rhset' in status:
-            rhset = status['rhset']
-            print('[rhset]       Target humidity: {}'.format(rhset))
-        if 'iaql' in status:
-            iaql = status['iaql']
-            print('[iaql]        Allergen index: {}'.format(iaql))
-        if 'temp' in status:
-            temp = status['temp']
-            print('[temp]        Temperature: {}'.format(temp))
-        if 'func' in status:
-            func = status['func']
-            func_str = {'P': 'Purification', 'PH': 'Purification & Humidification'}
-            func = func_str.get(func, func)
-            print('[func]        Function: {}'.format(func))
-        if 'mode' in status:
-            mode = status['mode']
-            mode_str = {'P': 'auto', 'A': 'allergen', 'S': 'sleep', 'M': 'manual', 'B': 'bacteria', 'N': 'night'}
-            mode = mode_str.get(mode, mode)
-            print('[mode]        Mode: {}'.format(mode))
-        if 'om' in status:
-            om = status['om']
-            om_str = {'s': 'silent', 't': 'turbo'}
-            om = om_str.get(om, om)
-            print('[om]          Fan speed: {}'.format(om))
-        if 'aqil' in status:
-            aqil = status['aqil']
-            print('[aqil]        Light brightness: {}'.format(aqil))
-        if 'uil' in status:
-            uil = status['uil']
-            uil_str = {'1': 'ON', '0': 'OFF'}
-            uil = uil_str.get(uil, uil)
-            print('[uil]         Buttons light: {}'.format(uil))
-        if 'ddp' in status:
-            ddp = status['ddp']
-            ddp_str = {'3': 'Humidity', '1': 'PM2.5', '0': 'IAI'}
-            ddp = ddp_str.get(ddp, ddp)
-            print('[ddp]         Used index: {}'.format(ddp))
-        if 'wl' in status:
-            wl = status['wl']
-            print('[wl]          Water level: {}'.format(wl))
-        if 'cl' in status:
-            cl = status['cl']
-            print('[cl]          Child lock: {}'.format(cl))
-        if 'dt' in status:
-            dt = status['dt']
-            if dt != 0:
-                print('[dt]          Timer: {} hours'.format(dt))
-        if 'dtrs' in status:
-            dtrs = status['dtrs']
-            if dtrs != 0:
-                print('[dtrs]        Timer: {} minutes left'.format(dtrs))
-        if 'fltsts0' in status:
-            fltsts0 = status['fltsts0']
-            print('[fltsts0]     Pre-filter and Wick: clean in {} hours'.format(fltsts0))
-        if 'fltsts1' in status:
-            fltsts1 = status['fltsts1']
-            print('[fltsts1]     HEPA filter: replace in {} hours'.format(fltsts1))
-        if 'fltsts2' in status:
-            fltsts2 = status['fltsts2']
-            print('[fltsts2]     Active carbon filter: replace in {} hours'.format(fltsts2))
-        if 'wicksts' in status:
-            wicksts = status['wicksts']
-            print('[wicksts]     Wick filter: replace in {} hours'.format(wicksts))
-        if 'err' in status:
-            err = status['err']
-            if err != 0:
-                err_str = {49408: 'no water', 32768: 'water tank open', 49155: 'pre-filter must be cleaned'}
-                err = err_str.get(err, err)
-                print('-'*20)
-                print('[ERROR] Message: {}'.format(err))
-
-    def set_values(self, values, debug=False):
-        if debug:
-            self.coapthon_logger.setLevel("DEBUG")
-        for key in values:
-            self._set(key, values[key])
-
-    def get_status(self, debug=False):
-        if debug:
-            self.coapthon_logger.setLevel("DEBUG")
-        status = self._get()
-        return self._dump_status(status, debug=debug)
-
-    def get_wifi(self):
-        print("Getting wifi credentials is currently not supported when using CoAP. Use the app instead.")
-
-    def set_wifi(self, ssid, pwd):
-        print("Setting wifi credentials is currently not supported when using CoAP. Use the app instead.")
-
-    def get_firmware(self):
-        status = self._get()
-        print("Software version: {}".format(status["swversion"]))
-        print("Over the air updates: {}".format(status["ota"]))
-
-    def get_filters(self):
-        status = self._get()
-        print('Pre-filter and Wick: clean in {} hours'.format(status["fltsts0"]))
-        print('HEPA filter: replace in {} hours'.format(status["fltsts1"]))
-        print('Active carbon filter: replace in {} hours'.format(status["fltsts2"]))
-        print('Wick filter: replace in {} hours'.format(status["wicksts"]))
-
-statusTransformer = {
-    "name" : ("Name: {}", None),
-    "type" : ("Type: {}", None),
-    "modelid" : ("ModelId: {}", None),
-    "swversion" : ("Version: {}", None),
-    "StatusType" : ("StatusType: {}", None),
-    "ota" : ("Over the air updates: {}", None),
-    "StatusType" : ("StatusType: {}", None),
-    "Runtime" : ("Runtime: {} hours", lambda runtime: round(((runtime/(1000*60*60))%24), 2)),
-    "pwr" : ("Power: {}", lambda pwr: {'1': 'ON', '0': 'OFF'}.get(pwr, pwr)),
-    "pm25" : ("PM25: {}", None),
-    "rh" : ("Humidity: {}", None),
-    "rhset" : ("Target humidity: {}", None),
-    "iaql" : ("Allergen index: {}", None),
-    "temp" : ("Temperature: {}", None),
-    "func" : ("Function: {}", lambda func: {'P': 'Purification', 'PH': 'Purification & Humidification'}.get(func, func)),
-    "mode" : ("Mode: {}", lambda mode: {'P': 'auto', 'A': 'allergen', 'S': 'sleep', 'M': 'manual', 'B': 'bacteria', 'N': 'night'}.get(mode, mode)),
-    "om" : ("Fan speed: {}", lambda om: {'s': 'silent', 't': 'turbo'}.get(om, om)),
-    "aqil" : ("Light brightness: {}", None),
-    "aqit" : ("Air quality notification threshold: {}", None),
-    "uil" : ("Buttons light: {}", lambda uil: {'1': 'ON', '0': 'OFF'}.get(uil, uil)),
-    "ddp" : ("Used index: {}", lambda ddp: {'3': 'Humidity', '1': 'PM2.5', '0': 'IAI'}.get(ddp, ddp)),
-    "wl" : ("Water level: {}", None),
-    "cl" : ("Child lock: {}", None),
-    "dt" : ("Timer: {} hours", lambda dt: None if dt == 0 else dt),
-    "dtrs" : ("Timer: {} minutes left", lambda dtrs: None if dtrs == 0 else dtrs),
-    "fltt1" : ("HEPA filter type: {}", lambda fltt1: {'A3': 'NanoProtect Filter Series 3 (FY2422)'}.get(fltt1, fltt1)),
-    "fltt2" : ("Active carbon filter type: {}", lambda fltt2: {'C7': 'NanoProtect Filter AC (FY2420)'}.get(fltt2, fltt2)),
-    "fltsts0" : ("Pre-filter and Wick: clean in {} hours", None),
-    "fltsts1" : ("HEPA filter: replace in {} hours", None),
-    "fltsts2" : ("Active carbon filter: replace in {} hours", None),
-    "wicksts" : ("Wick filter: replace in {} hours", None),
-    "err" : ("[ERROR] Message: {}", lambda err: None if err == 0 else {49408: 'no water', 32768: 'water tank open', 49155: 'pre-filter must be cleaned'}.get(err, err)),
-}
-
 class WrongDigestException(Exception):
     pass
 
-class Version107Client(AirClientBase):
+class Version107Client(CoAPAirClient):
     def __init__(self, host, port=5683, debug=False):
         super().__init__(host, port, debug)
-        self.client = self._create_coap_client(self.server, self.port)
         self.SECRET_KEY='JiangPan'
         self._sync()
 
@@ -851,10 +643,11 @@ def main():
 
     for device in devices:
         if args.version == '0.1.0':
-            c = HTTPAirClient(device['ip'])
-            c.load_key()
+            #c = HTTPAirClient(device['ip'], debug=args.debug)
+            #c.load_key()
+            pass
         elif args.version == '0.2.1':
-            c = CoAPAirClient(device['ip'])
+            c = Version021Client(device['ip'], debug=args.debug)
         elif args.version == '1.0.7':
             c = Version107Client(device['ip'], debug=args.debug)
 
