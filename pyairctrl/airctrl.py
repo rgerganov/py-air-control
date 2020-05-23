@@ -263,6 +263,7 @@ class HTTPAirClient(object):
         url = 'http://{}/di/v1/products/1/air'.format(self._host)
         status = self._get(url)
         self._dump_status(status, debug=debug)
+        return status
 
     def get_wifi(self):
         url = 'http://{}/di/v1/products/0/wifi'.format(self._host)
@@ -597,7 +598,8 @@ class CoAPAirClient:
         if debug:
             self.coapthon_logger.setLevel("DEBUG")
         status = self._get()
-        return self._dump_status(status, debug=debug)
+        self._dump_status(status, debug=debug)
+        return status
 
     def get_wifi(self):
         print("Getting wifi credentials is currently not supported when using CoAP. Use the app instead.")
@@ -691,7 +693,8 @@ class HTTPAirClientBase(ABC):
             self.logger.setLevel("DEBUG")
         status = self._get()
         if status is not None:
-            return self._dump_status(status, debug=debug)
+            self._dump_status(status, debug=debug)
+        return status
 
     def set_values(self, values, debug=False):
         if debug:
