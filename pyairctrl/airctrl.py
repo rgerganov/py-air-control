@@ -345,7 +345,7 @@ class CoAPAirClient(AirClientBase):
 class Version021Client(CoAPAirClient):
     def __init__(self, host, port=5683, debug=False):
         super().__init__(host, port, debug)
-        self._send_hello_sequence(client)
+        self._send_hello_sequence()
 
     def _send_over_socket(self, destination, packet):
         protocol = socket.getprotobyname('icmp')
@@ -363,14 +363,14 @@ class Version021Client(CoAPAirClient):
     def _get(self):
         path ="/sys/dev/status"
         try:
-            request = client.mk_request(defines.Codes.GET, path)
+            request = self.client.mk_request(defines.Codes.GET, path)
             request.destination = server=(self.server, self.port)
             request.type = defines.Types["ACK"]
             request.token = generate_random_token(4)
             request.observe = 0
-            response = client.send_request(request, None, 2)
+            response = self.client.send_request(request, None, 2)
         finally:
-            client.stop()
+            self.client.stop()
 
         if response:
             return json.loads(response.payload)["state"]["reported"]
@@ -380,14 +380,12 @@ class Version021Client(CoAPAirClient):
     def _set(self, key, value):
         path = "/sys/dev/control"
         try:
-            client = self._create_coap_client(self.server, self.port)
-            self._send_hello_sequence(client)
             payload = { "state" : { "desired" : { key: value } } }
-            client.post(path, json.dumps(payload))
+            self.client.post(path, json.dumps(payload))
         finally:
-            client.stop()
+            self.client.stop()
 
-    def _send_hello_sequence(self, client):
+    def _send_hello_sequence(self):
         ownIp = self._get_ip()
 
         header = self._create_icmp_header()
@@ -403,7 +401,7 @@ class Version021Client(CoAPAirClient):
         request = Request()
         request.destination = server=(self.server, self.port)
         request.code = defines.Codes.EMPTY.number
-        client.send_empty(request)
+        self.client.send_empty(request)
 
     def _get_ip(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
