@@ -116,7 +116,7 @@ class AirClientBase(ABC):
     def get_status(self, debug=False):
         if debug:
             self.logger.setLevel("DEBUG")
-        status = self._get()
+        status = self._get('air')
         if status is not None:
             return self._dump_status(status, debug=debug)
 
@@ -127,7 +127,7 @@ class AirClientBase(ABC):
             self._set(key, values[key])
 
     @abstractmethod
-    def _get(self):
+    def _get(self, param):
         pass
 
     @abstractmethod
@@ -135,7 +135,7 @@ class AirClientBase(ABC):
         pass
 
     def get_firmware(self):
-        status = self._get()
+        status = self._get('firmware')
         if status is None:
             print("No version-info found")
             return
@@ -144,7 +144,7 @@ class AirClientBase(ABC):
         print(self._get_info_for_key("ota", status["ota"] if "ota" in status else "nA"))
 
     def get_filters(self):
-        status = self._get()
+        status = self._get('fltsts')
         if status is None:
             print("No version-info found")
             return
@@ -283,7 +283,8 @@ class HTTPAirClient(AirClientBase):
             resp = decrypt(resp.decode('ascii'), self._session_key)
             return json.loads(resp)
 
-    def _get(self, url):
+    def _get(self, param):
+        url = 'http://{}/di/v1/products/1/{}'.format(self.server, param)
         try:
             return self._get_once(url)
         except Exception as e:
@@ -292,29 +293,9 @@ class HTTPAirClient(AirClientBase):
             self._get_key()
             return self._get_once(url)
 
-    def get_status(self, debug=False):
-        url = 'http://{}/di/v1/products/1/air'.format(self.server)
-        status = self._get(url)
-        self._dump_status(status, debug=debug)
-
     def get_wifi(self):
-        url = 'http://{}/di/v1/products/0/wifi'.format(self.server)
-        wifi = self._get(url)
+        wifi = self._get('wifi')
         pprint.pprint(wifi)
-
-    def get_firmware(self):
-        url = 'http://{}/di/v1/products/0/firmware'.format(self.server)
-        firmware = self._get(url)
-        pprint.pprint(firmware)
-
-    def get_filters(self):
-        url = 'http://{}/di/v1/products/1/fltsts'.format(self.server)
-        filters = self._get(url)
-        print('Pre-filter and Wick: clean in {} hours'.format(filters['fltsts0']))
-        if 'wicksts' in filters:
-            print('Wick filter: replace in {} hours'.format(filters['wicksts']))
-        print('Active carbon filter: replace in {} hours'.format(filters['fltsts2']))
-        print('HEPA filter: replace in {} hours'.format(filters['fltsts1']))
 
     def pair(self, client_id, client_secret):
         values = {}
@@ -360,7 +341,7 @@ class Version021Client(CoAPAirClient):
         finally:
             s.close()
 
-    def _get(self):
+    def _get(self, param):
         path ="/sys/dev/status"
         try:
             request = self.client.mk_request(defines.Codes.GET, path)
@@ -574,7 +555,7 @@ class Version107Client(CoAPAirClient):
         iv = key_and_iv[half_keylen:]
         return AES.new(bytes(secret_key.encode('utf8')), AES.MODE_CBC, bytes(iv.encode('utf8')))
 
-    def _get(self):
+    def _get(self, param):
         path ="/sys/dev/status"
         decrypted_payload = None
 
