@@ -11,7 +11,8 @@ import argparse
 import configparser
 import urllib.request
 import urllib.parse
-from pyairctrl.airctrl import HTTPAirClient
+
+from .client.http_air_client import HTTPAirClient
 
 def parse_attr(str, key):
     p = re.compile('%s=\"(.+?)\"' % key)
@@ -19,7 +20,7 @@ def parse_attr(str, key):
     return m.group(1)
 
 
-class CloudClient(object):
+class CloudClient:
 
     def __init__(self, device_id, debug=False):
         self._device_id = device_id
