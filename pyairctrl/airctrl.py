@@ -4,10 +4,10 @@ import argparse
 import sys
 import pprint
 
-from .status_transformer import STATUS_TRANSFORMER
-from .coap_air_client import CoAPAirClient
-from .http_air_client import HTTPAirClient
-from .v_107_client import Version107Client
+from pyairctrl.status_transformer import STATUS_TRANSFORMER
+from pyairctrl.coap_air_client import CoAPAirClient
+from pyairctrl.http_air_client import HTTPAirClient
+from pyairctrl.v_107_client import Version107Client
 
 
 class Version107Cli:

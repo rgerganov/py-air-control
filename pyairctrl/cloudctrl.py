@@ -12,7 +12,7 @@ import configparser
 import urllib.request
 import urllib.parse
 
-from .http_air_client import HTTPAirClient
+from pyairctrl.http_air_client import HTTPAirClient
 
 def parse_attr(str, key):
     p = re.compile('%s=\"(.+?)\"' % key)
