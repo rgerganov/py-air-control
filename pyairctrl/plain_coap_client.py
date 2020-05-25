@@ -1,4 +1,4 @@
-"""CoAP Air Client."""
+"""Plain CoAP Air Client."""
 
 # pylint: disable=invalid-name, missing-class-docstring, missing-function-docstring
 
@@ -20,7 +20,7 @@ class NotSupportedException(Exception):
     pass
 
 
-class CoAPAirClient:
+class PlainCoAPAirClient:
     def __init__(self, host, port=5683):
         self.coapthon_logger = logging.getLogger("coapthon")
         self.coapthon_logger.setLevel("WARN")

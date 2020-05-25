@@ -79,17 +79,17 @@ Active carbon filter: replace in 1565 hours
 HEPA filter: replace in 3965 hours
 ```
 
-Switching the version of the communication protocol
+Switching the the communication protocol
 ---
-Use --version to switch between communication protocols.
-The following command will try to retrieve the current status on devices with version 0.2.1 up to 1.0.7 (not included):
+Use --protocol to switch between communication protocols.
+The following command will try to retrieve the current status using the CoAP protocol with encryption:
 ```
-$ airctrl --ipaddr 192.168.0.17 --version 0.2.1
+$ airctrl --ipaddr 192.168.0.17 --protocol coap
 ```
 
-The following command will try to retrieve the current status on devices with version 1.0.7 and higher:
+The following command will try to retrieve the current status using the CoAP protocol without encryption:
 ```
-$ airctrl --ipaddr 192.168.0.17 --version 1.0.7
+$ airctrl --ipaddr 192.168.0.17 --protocol plain_coap
 ```
 
 Usage via cloud services

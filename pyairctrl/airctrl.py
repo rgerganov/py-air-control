@@ -5,14 +5,14 @@ import sys
 import pprint
 
 from pyairctrl.status_transformer import STATUS_TRANSFORMER
-from pyairctrl.coap_air_client import CoAPAirClient
-from pyairctrl.http_air_client import HTTPAirClient
-from pyairctrl.v_107_client import Version107Client
+from pyairctrl.coap_client import CoAPAirClient
+from pyairctrl.http_client import HTTPAirClient
+from pyairctrl.plain_coap_client import PlainCoAPAirClient
 
 
-class Version107Cli:
+class CoAPCli:
     def __init__(self, host, port=5683, debug=False):
-        self._client = Version107Client(host, port, debug)
+        self._client = CoAPAirClient(host, port, debug)
 
     def _get_info_for_key(self, key, current_value):
         if key in STATUS_TRANSFORMER:
@@ -227,9 +227,9 @@ class HTTPAirCli:
         print("HEPA filter: replace in {} hours".format(filters["fltsts1"]))
 
 
-class CoAPAirCli:
+class PlainCoAPAirCli:
     def __init__(self, host, port=5683):
-        self._client = CoAPAirClient(host, port)
+        self._client = PlainCoAPAirClient(host, port)
 
     def _dump_status(self, status, debug=False):
         if debug:
@@ -359,7 +359,7 @@ class CoAPAirCli:
         self._client.set_values(values, debug)
 
     def get_status(self, debug=False):
-        status = self._client.get_values(debug)
+        status = self._client.get_status(debug)
         return self._dump_status(status, debug=debug)
 
     def get_wifi(self):
@@ -388,7 +388,7 @@ class CoAPAirCli:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--ipaddr', help='IP address of air purifier')
-    parser.add_argument('--version', help='set the version of your device ', choices=['0.1.0','0.2.1', '1.0.7'], default='0.1.0')
+    parser.add_argument('--protocol', help='set the communication protocol', choices=['http', 'coap', 'plain_coap'], default='http')
     parser.add_argument('-d', '--debug', help='show debug output', action='store_true')
     parser.add_argument('--om', help='set fan speed', choices=['1','2','3','s','t'])
     parser.add_argument('--pwr', help='power on/off', choices=['0','1'])
@@ -410,7 +410,7 @@ def main():
     if args.ipaddr:
         devices = [ {'ip': args.ipaddr} ]
     else:
-        if args.version in [ '0.2.1', '1.0.7']:
+        if args.protocol in ['coap', 'plain_coap']:
             print('Autodetection is not supported when using CoAP. Use --ipaddr to set an IP address.')
             sys.exit(1)
 
@@ -420,13 +420,13 @@ def main():
             sys.exit(1)
 
     for device in devices:
-        if args.version == '0.1.0':
+        if args.protocol == 'http':
             c = HTTPAirCli(device['ip'])
             c.load_key()
-        elif args.version == '0.2.1':
-            c = CoAPAirCli(device['ip'])
-        elif args.version == '1.0.7':
-            c = Version107Cli(device['ip'], debug=args.debug)
+        elif args.protocol == 'plain_coap':
+            c = PlainCoAPAirCli(device['ip'])
+        elif args.protocol == 'coap':
+            c = CoAPCli(device['ip'], debug=args.debug)
 
         if args.wifi:
             c.get_wifi()

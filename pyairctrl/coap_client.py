@@ -1,4 +1,4 @@
-"""Version 107 client."""
+"""CoAP Air Client."""
 
 # pylint: disable=invalid-name, missing-class-docstring, missing-function-docstring
 
@@ -66,7 +66,7 @@ class HTTPAirClientBase(ABC):
         raise NotSupportedException
 
 
-class Version107Client(HTTPAirClientBase):
+class CoAPAirClient(HTTPAirClientBase):
     SECRET_KEY = "JiangPan"
 
     def __init__(self, host, port=5683, debug=False):
