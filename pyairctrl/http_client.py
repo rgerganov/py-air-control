@@ -149,6 +149,7 @@ class HTTPAirClient:
                 self._get_key()
         else:
             self._get_key()
+        return self._session_key
 
     def _check_key(self):
         url = "http://{}/di/v1/products/1/air".format(self._host)
