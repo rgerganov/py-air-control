@@ -8,4 +8,10 @@ python:
 install:
     - pip install -r requirements.txt
     - pip install .
-script: airctrl -h && cloudctrl -h
+    - pip install coveralls flask
+    - sudo iptables -t nat -I OUTPUT -p tcp -o lo --dport 80 -j REDIRECT --to-ports 5000
+script: 
+    - airctrl -h && cloudctrl -h
+    - coverage run testing/http_client_tests.py
+after_success:
+    - coveralls
