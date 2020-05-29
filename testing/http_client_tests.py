@@ -94,7 +94,7 @@ class HTTPClientTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.httpServer = HttpServer(80)
+        cls.httpServer = HttpServer(5000)
         dir_path = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(dir_path, "data.json"), "r") as json_file:
             cls.test_data = json.load(json_file)
