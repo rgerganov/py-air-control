@@ -104,6 +104,7 @@ class HTTPAirClient:
     def __init__(self, host):
         self._host = host
         self._session_key = None
+        self.load_key()
 
     def _get_key(self):
         print("Exchanging secret key with the device ...")

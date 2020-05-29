@@ -422,7 +422,6 @@ def main():
     for device in devices:
         if args.protocol == 'http':
             c = HTTPAirCli(device['ip'])
-            c.load_key()
         elif args.protocol == 'plain_coap':
             c = PlainCoAPAirCli(device['ip'])
         elif args.protocol == 'coap':
