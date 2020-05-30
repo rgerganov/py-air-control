@@ -1,6 +1,5 @@
 # pylint: disable=invalid-name, missing-class-docstring, missing-function-docstring
 
-import pytest
 from multiprocessing import Process
 import os
 import time
@@ -8,6 +7,7 @@ import json
 import random
 import base64
 import flask
+import pytest
 import requests
 from Cryptodome.Cipher import AES
 from Cryptodome.Util.Padding import pad, unpad
@@ -130,10 +130,8 @@ class TestHTTPClient:
         self.httpServer.add_url_rule(
             "/di/v1/products/1/fltsts", view_func=self.get_filters, methods=["GET"]
         )
-        print("start1")
         self.httpServer.start()
         yield self.httpServer
-        print("stop1")
         self.httpServer.stop()
 
     def test_ssdp(self):
