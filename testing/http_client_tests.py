@@ -1,6 +1,6 @@
 # pylint: disable=invalid-name, missing-class-docstring, missing-function-docstring
 
-import unittest
+import pytest
 from multiprocessing import Process
 import os
 import time
@@ -88,90 +88,99 @@ class HttpServer:
         self.flask_server.add_url_rule(rule, view_func=view_func, methods=methods)
 
 
-class HTTPClientTests(unittest.TestCase):
+class TestHTTPClient:
     device_key = "1234567890123456"
     current_dataset = ""
 
-    @classmethod
-    def setUpClass(cls):
-        cls.httpServer = HttpServer(5000)
+    @pytest.fixture(scope="class")
+    def air_client(self):
+        return HTTPAirClient("127.0.0.1")
+
+    @pytest.fixture(scope="class")
+    def test_data(self):
+        return self._test_data()
+
+    def _test_data(self):
         dir_path = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(dir_path, "data.json"), "r") as json_file:
-            cls.test_data = json.load(json_file)
-        cls.httpServer.add_url_rule(
-            "/di/v1/products/0/security", view_func=cls.security, methods=["PUT"]
-        )
-        cls.httpServer.add_url_rule(
-            "/di/v1/products/1/air", view_func=cls.get_status, methods=["GET"]
-        )
-        cls.httpServer.add_url_rule(
-            "/di/v1/products/1/air", view_func=cls.set_status, methods=["PUT"]
-        )
-        cls.httpServer.add_url_rule(
-            "/di/v1/products/0/wifi", view_func=cls.get_wifi, methods=["GET"]
-        )
-        cls.httpServer.add_url_rule(
-            "/di/v1/products/0/wifi", view_func=cls.set_wifi, methods=["PUT"]
-        )
-        cls.httpServer.add_url_rule(
-            "/di/v1/products/0/firmware", view_func=cls.get_firmware, methods=["GET"]
-        )
-        cls.httpServer.add_url_rule(
-            "/di/v1/products/1/fltsts", view_func=cls.get_filters, methods=["GET"]
-        )
-        cls.httpServer.start()
-        cls.airClient = HTTPAirClient("127.0.0.1")
+            return json.load(json_file)
 
-    @classmethod
-    def tearDownClass(cls):
-        cls.httpServer.stop()
+    @pytest.fixture(scope="class", autouse=True)
+    def create_http_server(self):
+        self.httpServer = HttpServer(5000)
+
+        self.httpServer.add_url_rule(
+            "/di/v1/products/0/security", view_func=self.security, methods=["PUT"]
+        )
+        self.httpServer.add_url_rule(
+            "/di/v1/products/1/air", view_func=self.get_status, methods=["GET"]
+        )
+        self.httpServer.add_url_rule(
+            "/di/v1/products/1/air", view_func=self.set_status, methods=["PUT"]
+        )
+        self.httpServer.add_url_rule(
+            "/di/v1/products/0/wifi", view_func=self.get_wifi, methods=["GET"]
+        )
+        self.httpServer.add_url_rule(
+            "/di/v1/products/0/wifi", view_func=self.set_wifi, methods=["PUT"]
+        )
+        self.httpServer.add_url_rule(
+            "/di/v1/products/0/firmware", view_func=self.get_firmware, methods=["GET"]
+        )
+        self.httpServer.add_url_rule(
+            "/di/v1/products/1/fltsts", view_func=self.get_filters, methods=["GET"]
+        )
+        print("start1")
+        self.httpServer.start()
+        yield self.httpServer
+        print("stop1")
+        self.httpServer.stop()
 
     def test_ssdp(self):
         # missing
         pass
 
-    def test_get_valid_session_key(self):
+    def test_get_valid_session_key(self, air_client):
         fpath = os.path.expanduser("~/../.pyairctrl")
         if os.path.isfile(fpath):
             os.remove(fpath)
 
-        current_key = self.airClient.load_key()
-        self.assertEqual(current_key.decode("ascii"), self.device_key)
+        current_key = air_client.load_key()
+        assert current_key.decode("ascii") == self.device_key
 
-    def test_set_values(self):
+    def test_set_values(self, air_client):
         values = {}
         values["mode"] = "A"
-        result = self.airClient.set_values(values)
-        self.assertEqual(result, json.loads('{"sucess":"true"}'))
+        result = air_client.set_values(values)
+        assert result == json.loads('{"sucess":"true"}')
 
-    def test_set_wifi(self):
-        result = self.airClient.set_wifi("1234", "5678")
-        self.assertEqual(result, json.loads('{"sucess":"true"}'))
+    def test_set_wifi(self, air_client):
+        result = air_client.set_wifi("1234", "5678")
+        assert result == json.loads('{"sucess":"true"}')
 
-    def test_get_status_is_valid(self):
-        self.assert_json_data(self.airClient.get_status, "AC2729-status")
+    def test_get_status_is_valid(self, air_client, test_data):
+        self.assert_json_data(air_client.get_status, "AC2729-status", test_data)
 
-    def test_get_wifi_is_valid(self):
-        self.assert_json_data(self.airClient.get_wifi, "AC2729-wifi")
+    def test_get_wifi_is_valid(self, air_client, test_data):
+        self.assert_json_data(air_client.get_wifi, "AC2729-wifi", test_data)
 
-    def test_get_firmware_is_valid(self):
-        self.assert_json_data(self.airClient.get_firmware, "AC2729-firmware")
+    def test_get_firmware_is_valid(self, air_client, test_data):
+        self.assert_json_data(air_client.get_firmware, "AC2729-firmware", test_data)
 
-    def test_get_filters_is_valid(self):
-        self.assert_json_data(self.airClient.get_filters, "AC2729-fltsts")
+    def test_get_filters_is_valid(self, air_client, test_data):
+        self.assert_json_data(air_client.get_filters, "AC2729-fltsts", test_data)
 
     def test_pair(self):
         # missing
         pass
 
-    def assert_json_data(self, air_func, dataset):
+    def assert_json_data(self, air_func, dataset, test_data):
         result = air_func()
-        data = self.test_data[dataset]["data"]
+        data = test_data[dataset]["data"]
         json_data = json.loads(data)
-        self.assertEqual(result, json_data)
+        assert result == json_data
 
-    @classmethod
-    def security(cls):
+    def security(self):
         b = random.getrandbits(256)
         B = pow(G, b, P)
 
@@ -180,7 +189,7 @@ class HTTPClientTests(unittest.TestCase):
         s = pow(A, b, P)
         s_bytes = s.to_bytes(128, byteorder="big")[:16]
 
-        session_key_encrypted = encrypt(cls.device_key, s_bytes)
+        session_key_encrypted = encrypt(self.device_key, s_bytes)
 
         data = json.dumps(
             {"key": session_key_encrypted.hex(), "hellman": format(B, "x")}
@@ -189,53 +198,41 @@ class HTTPClientTests(unittest.TestCase):
 
         return data_enc
 
-    @classmethod
-    def get_status(cls):
-        return cls.callback_get_data("AC2729-status")
+    def get_status(self):
+        return self.callback_get_data("AC2729-status")
 
-    @classmethod
-    def set_status(cls):
-        return cls.callback_set_data('{"mode": "A"}')
+    def set_status(self):
+        return self.callback_set_data('{"mode": "A"}')
 
-    @classmethod
-    def get_wifi(cls):
-        return cls.callback_get_data("AC2729-wifi")
+    def get_wifi(self):
+        return self.callback_get_data("AC2729-wifi")
 
-    @classmethod
-    def set_wifi(cls):
-        return cls.callback_set_data('{"ssid": "1234", "password": "5678"}')
+    def set_wifi(self):
+        return self.callback_set_data('{"ssid": "1234", "password": "5678"}')
 
-    @classmethod
-    def get_firmware(cls):
-        return cls.callback_get_data("AC2729-firmware")
+    def get_firmware(self):
+        return self.callback_get_data("AC2729-firmware")
 
-    @classmethod
-    def get_filters(cls):
-        return cls.callback_get_data("AC2729-fltsts")
+    def get_filters(self):
+        return self.callback_get_data("AC2729-fltsts")
 
-    @classmethod
-    def callback_get_data(cls, dataset):
-        data = cls.test_data[dataset]["data"]
+    def callback_get_data(self, dataset):
+        data = self._test_data()[dataset]["data"]
         json_data = json.loads(data)
         encrypted_data = padding_encrypt(
-            json_data, bytes(cls.device_key.encode("ascii"))
+            json_data, bytes(self.device_key.encode("ascii"))
         )
         return encrypted_data
 
-    @classmethod
-    def callback_set_data(cls, valid_data):
+    def callback_set_data(self, valid_data):
         encrypted_data = flask.request.get_data()
         data = json.loads(
-            decrypt(encrypted_data, bytes(cls.device_key.encode("ascii")))
+            decrypt(encrypted_data, bytes(self.device_key.encode("ascii")))
         )
 
         success = str(data == json.loads(valid_data)).lower()
 
         return padding_encrypt(
             json.loads('{{"sucess":"{}"}}'.format(success)),
-            bytes(cls.device_key.encode("ascii")),
+            bytes(self.device_key.encode("ascii")),
         )
-
-
-if __name__ == "__main__":
-    unittest.main()
