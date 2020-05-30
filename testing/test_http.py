@@ -12,6 +12,7 @@ import requests
 from Cryptodome.Cipher import AES
 from Cryptodome.Util.Padding import pad, unpad
 from pyairctrl.http_client import HTTPAirClient
+from pyairctrl.airctrl import HTTPAirCli
 
 G = int(
     "A4D1CBD5C3FD34126765A442EFB99905F8104DD258AC507FD6406CFF14266D31266FEA1E5C41564B777E690F5504F213160217B4B01B886A5E91547F9E2749F4D7FBD7D3B9A92EE1909D0D2263F80A76A6A24C087A091F531DBF0A0169B6A28AD662A4D18E73AFA32D779D5918D08BC8858F4DCEF97C2A24855E6EEB22B3B2E5",
@@ -97,6 +98,10 @@ class TestHTTP:
         return HTTPAirClient("127.0.0.1")
 
     @pytest.fixture(scope="class")
+    def air_cli(self):
+        return HTTPAirCli("127.0.0.1")
+
+    @pytest.fixture(scope="class")
     def test_data(self):
         return self._test_data()
 
@@ -134,10 +139,6 @@ class TestHTTP:
         yield self.httpServer
         self.httpServer.stop()
 
-    def test_ssdp(self):
-        # missing
-        pass
-
     def test_get_valid_session_key(self, air_client):
         fpath = os.path.expanduser("~/../.pyairctrl")
         if os.path.isfile(fpath):
@@ -168,15 +169,30 @@ class TestHTTP:
     def test_get_filters_is_valid(self, air_client, test_data):
         self.assert_json_data(air_client.get_filters, "AC2729-fltsts", test_data)
 
-    def test_pair(self):
-        # missing
-        pass
+    def test_get_cli_status_is_valid(self, air_cli, test_data, capfd):
+        self.assert_cli_data(air_cli.get_status, "AC2729-status-cli", test_data, capfd)
+
+    def test_get_cli_wifi_is_valid(self, air_cli, test_data, capfd):
+        self.assert_cli_data(air_cli.get_wifi, "AC2729-wifi-cli", test_data, capfd)
+
+    def test_get_cli_firmware_is_valid(self, air_cli, test_data, capfd):
+        self.assert_cli_data(
+            air_cli.get_firmware, "AC2729-firmware-cli", test_data, capfd
+        )
+
+    def test_get_cli_filters_is_valid(self, air_cli, test_data, capfd):
+        self.assert_cli_data(air_cli.get_filters, "AC2729-fltsts-cli", test_data, capfd)
 
     def assert_json_data(self, air_func, dataset, test_data):
         result = air_func()
         data = test_data[dataset]["data"]
         json_data = json.loads(data)
         assert result == json_data
+
+    def assert_cli_data(self, air_func, dataset, test_data, capfd):
+        air_func()
+        result, err = capfd.readouterr()
+        assert result == test_data[dataset]["data"]
 
     def security(self):
         b = random.getrandbits(256)
