@@ -88,7 +88,7 @@ class HttpServer:
         self.flask_server.add_url_rule(rule, view_func=view_func, methods=methods)
 
 
-class TestHTTPClient:
+class TestHTTP:
     device_key = "1234567890123456"
     current_dataset = ""
 

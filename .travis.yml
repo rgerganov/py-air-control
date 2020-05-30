@@ -11,6 +11,6 @@ install:
     - sudo iptables -t nat -I OUTPUT -p tcp -o lo --dport 80 -j REDIRECT --to-ports 5000
 script: 
     - airctrl -h && cloudctrl -h
-    - coverage run -m pytest testing/http_client_tests.py
+    - coverage run -m pytest
 after_success:
     - coveralls
