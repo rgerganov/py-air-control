@@ -151,11 +151,11 @@ class TestHTTP:
         values = {}
         values["mode"] = "A"
         result = air_client.set_values(values)
-        assert result == json.loads('{"sucess":"true"}')
+        assert result == json.loads('{"status":"success"}')
 
     def test_set_wifi(self, air_client):
         result = air_client.set_wifi("1234", "5678")
-        assert result == json.loads('{"sucess":"true"}')
+        assert result == json.loads('{"status":"success"}')
 
     def test_get_status_is_valid(self, air_client, test_data):
         self.assert_json_data(air_client.get_status, "AC2729-status", test_data)
@@ -244,9 +244,9 @@ class TestHTTP:
             decrypt(encrypted_data, bytes(self.device_key.encode("ascii")))
         )
 
-        success = str(data == json.loads(valid_data)).lower()
+        success = "success" if data == json.loads(valid_data) else "failed"
 
         return padding_encrypt(
-            json.loads('{{"sucess":"{}"}}'.format(success)),
+            json.loads('{{"status":"{}"}}'.format(success)),
             bytes(self.device_key.encode("ascii")),
         )
