@@ -158,30 +158,30 @@ class TestHTTP:
         assert result == json.loads('{"status":"success"}')
 
     def test_get_status_is_valid(self, air_client, test_data):
-        self.assert_json_data(air_client.get_status, "AC2729-status", test_data)
+        self.assert_json_data(air_client.get_status, "http-status", test_data)
 
     def test_get_wifi_is_valid(self, air_client, test_data):
-        self.assert_json_data(air_client.get_wifi, "AC2729-wifi", test_data)
+        self.assert_json_data(air_client.get_wifi, "http-wifi", test_data)
 
     def test_get_firmware_is_valid(self, air_client, test_data):
-        self.assert_json_data(air_client.get_firmware, "AC2729-firmware", test_data)
+        self.assert_json_data(air_client.get_firmware, "http-firmware", test_data)
 
     def test_get_filters_is_valid(self, air_client, test_data):
-        self.assert_json_data(air_client.get_filters, "AC2729-fltsts", test_data)
+        self.assert_json_data(air_client.get_filters, "http-fltsts", test_data)
 
     def test_get_cli_status_is_valid(self, air_cli, test_data, capfd):
-        self.assert_cli_data(air_cli.get_status, "AC2729-status-cli", test_data, capfd)
+        self.assert_cli_data(air_cli.get_status, "http-status-cli", test_data, capfd)
 
     def test_get_cli_wifi_is_valid(self, air_cli, test_data, capfd):
-        self.assert_cli_data(air_cli.get_wifi, "AC2729-wifi-cli", test_data, capfd)
+        self.assert_cli_data(air_cli.get_wifi, "http-wifi-cli", test_data, capfd)
 
     def test_get_cli_firmware_is_valid(self, air_cli, test_data, capfd):
         self.assert_cli_data(
-            air_cli.get_firmware, "AC2729-firmware-cli", test_data, capfd
+            air_cli.get_firmware, "http-firmware-cli", test_data, capfd
         )
 
     def test_get_cli_filters_is_valid(self, air_cli, test_data, capfd):
-        self.assert_cli_data(air_cli.get_filters, "AC2729-fltsts-cli", test_data, capfd)
+        self.assert_cli_data(air_cli.get_filters, "http-fltsts-cli", test_data, capfd)
 
     def assert_json_data(self, air_func, dataset, test_data):
         result = air_func()
@@ -213,22 +213,22 @@ class TestHTTP:
         return data_enc
 
     def get_status(self):
-        return self.callback_get_data("AC2729-status")
+        return self.callback_get_data("http-status")
 
     def set_status(self):
         return self.callback_set_data('{"mode": "A"}')
 
     def get_wifi(self):
-        return self.callback_get_data("AC2729-wifi")
+        return self.callback_get_data("http-wifi")
 
     def set_wifi(self):
         return self.callback_set_data('{"ssid": "1234", "password": "5678"}')
 
     def get_firmware(self):
-        return self.callback_get_data("AC2729-firmware")
+        return self.callback_get_data("http-firmware")
 
     def get_filters(self):
-        return self.callback_get_data("AC2729-fltsts")
+        return self.callback_get_data("http-fltsts")
 
     def callback_get_data(self, dataset):
         data = self._test_data()[dataset]["data"]
