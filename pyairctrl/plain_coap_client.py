@@ -68,7 +68,8 @@ class PlainCoAPAirClient:
             client = self._create_coap_client(self.server, self.port)
             self._send_hello_sequence(client)
             payload = {"state": {"desired": {key: value}}}
-            client.post(path, json.dumps(payload))
+            response = client.post(path, json.dumps(payload))
+            return response.payload == '{"status":"success"}'
         finally:
             client.stop()
 
@@ -211,8 +212,11 @@ class PlainCoAPAirClient:
     def set_values(self, values, debug=False):
         if debug:
             self.coapthon_logger.setLevel("DEBUG")
+        result = True
         for key in values:
-            self._set(key, values[key])
+            result = result and self._set(key, values[key])
+
+        return result
 
     def get_status(self, debug=False):
         if debug:
@@ -228,8 +232,10 @@ class PlainCoAPAirClient:
 
     def get_firmware(self):
         status = self._get()
+        # TODO Really transmit full status here?
         return status
 
     def get_filters(self):
         status = self._get()
+        # TODO Really transmit full status here?
         return status
