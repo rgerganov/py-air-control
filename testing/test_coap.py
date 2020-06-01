@@ -9,8 +9,11 @@ from coapthon.server.coap import CoAP
 from coapthon.client.helperclient import HelperClient
 from coapthon.resources.resource import Resource
 from coapthon import defines
-from pyairctrl.plain_coap_client import PlainCoAPAirClient
-from pyairctrl.airctrl import PlainCoAPAirCli
+from pyairctrl.coap_client import CoAPAirClient
+from pyairctrl.airctrl import CoAPCli
+from Cryptodome.Cipher import AES
+from Cryptodome.Util.Padding import pad, unpad
+import hashlib
 
 
 class CoAPServer:
@@ -76,11 +79,20 @@ class CoapTestResource(Resource):
 
 
 class StatusResource(Resource):
+    SECRET_KEY = "JiangPan"
+
     def __init__(self, dataset, name="StatusResource"):
         super(StatusResource, self).__init__(name)
         self.dataset = dataset
         self.test_data = self._test_data()
         self.content_type = "application/json"
+        self.encryption_key = ""
+
+    def set_encryption_key(self, encryption_key):
+        self.encryption_key = encryption_key
+
+    def change_dataset(self, dataset):
+        self.dataset = dataset
 
     def _test_data(self):
         dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -91,6 +103,42 @@ class StatusResource(Resource):
         response.payload = '{{"state":{{"reported": {} }} }}'.format(
             self.test_data[self.dataset]["data"]
         )
+        response.payload = self._encrypt_payload(response.payload)
+        return self, response
+
+    def _encrypt_payload(self, payload):
+        aes = self._handle_AES(self.encryption_key)
+        paded_message = pad(bytes(payload.encode("utf8")), 16, style="pkcs7")
+        encoded_message = aes.encrypt(paded_message).hex().upper()
+        digest = self._create_digest(self.encryption_key, encoded_message)
+        return self.encryption_key + encoded_message + digest
+
+    def _handle_AES(self, id):
+        key_and_iv = hashlib.md5((self.SECRET_KEY + id).encode()).hexdigest().upper()
+        half_keylen = len(key_and_iv) // 2
+        secret_key = key_and_iv[0:half_keylen]
+        iv = key_and_iv[half_keylen:]
+        return AES.new(
+            bytes(secret_key.encode("utf8")), AES.MODE_CBC, bytes(iv.encode("utf8"))
+        )
+
+    def _create_digest(self, id, encoded_message):
+        digest = (
+            hashlib.sha256(bytes((id + encoded_message).encode("utf8")))
+            .hexdigest()
+            .upper()
+        )
+        return digest
+
+
+class SyncResource(Resource):
+    def __init__(self, name="SyncResource"):
+        super(SyncResource, self).__init__(name)
+        self.encryption_key = ""
+
+    def render_POST_advanced(self, request, response):
+        self.encryption_key = request.payload
+        response.payload = "2170B935‬"
         return self, response
 
 
@@ -108,14 +156,14 @@ class ControlResource(Resource):
         return self, response
 
 
-class TestPlainCoap:
+class TestCoap:
     @pytest.fixture(scope="class")
     def air_client(self):
-        return PlainCoAPAirClient("127.0.0.1")
+        return CoAPAirClient("127.0.0.1")
 
     @pytest.fixture(scope="class")
     def air_cli(self):
-        return PlainCoAPAirCli("127.0.0.1")
+        return CoAPCli("127.0.0.1")
 
     @pytest.fixture(scope="class")
     def test_data(self):
@@ -126,88 +174,124 @@ class TestPlainCoap:
         with open(os.path.join(dir_path, "data.json"), "r") as json_file:
             return json.load(json_file)
 
+    @pytest.fixture(scope="class")
+    def sync_resource(self):
+        return SyncResource()
+
+    @pytest.fixture(scope="class")
+    def status_resource(self):
+        return StatusResource("coap-status")
+
     @pytest.fixture(scope="class", autouse=True)
-    def plain_coap_server(self):
+    def coap_server(self, sync_resource, status_resource):
         server = CoAPServer(5683)
-        server.add_url_rule("/sys/dev/status", StatusResource("plain-coap-status"))
+        server.add_url_rule("/sys/dev/status", status_resource)
         server.add_url_rule("/sys/dev/control", ControlResource('{"mode": "A"}'))
+        server.add_url_rule("/sys/dev/sync", sync_resource)
         server.start()
         yield server
         server.stop()
 
-    def test_set_values(self, air_client, monkeypatch):
-        def send_hello_sequence(client):
-            return
+    # def test_set_values(self, air_client):
+    #     values = {}
+    #     values["mode"] = "A"
+    #     result = air_client.set_values(values)
+    #     assert result
 
-        monkeypatch.setattr(air_client, "_send_hello_sequence", send_hello_sequence)
-
-        values = {}
-        values["mode"] = "A"
-        result = air_client.set_values(values)
-        assert result
-
-    def test_get_status_is_valid(self, air_client, test_data, monkeypatch):
+    def test_get_status_is_valid(
+        self, sync_resource, status_resource, air_client, test_data
+    ):
         self.assert_json_data(
             air_client.get_status,
-            "plain-coap-status",
+            "coap-status",
             test_data,
-            monkeypatch,
             air_client,
+            sync_resource,
+            status_resource,
         )
 
-    def test_get_firmware_is_valid(self, air_client, test_data, monkeypatch):
+    def test_get_firmware_is_valid(
+        self, sync_resource, status_resource, air_client, test_data
+    ):
         self.assert_json_data(
             air_client.get_firmware,
-            "plain-coap-status",
+            "coap-status",
             test_data,
-            monkeypatch,
             air_client,
+            sync_resource,
+            status_resource,
         )
 
-    def test_get_filters_is_valid(self, air_client, test_data, monkeypatch):
+    def test_get_filters_is_valid(
+        self, sync_resource, status_resource, air_client, test_data
+    ):
         self.assert_json_data(
             air_client.get_filters,
-            "plain-coap-status",
+            "coap-status",
             test_data,
-            monkeypatch,
             air_client,
+            sync_resource,
+            status_resource,
         )
 
-    def test_get_cli_status_is_valid(self, air_cli, test_data, monkeypatch, capfd):
+    def test_get_cli_status_is_valid(
+        self, sync_resource, status_resource, air_cli, test_data, capfd
+    ):
         self.assert_cli_data(
             air_cli.get_status,
-            "plain-coap-status-cli",
+            "coap-status-cli",
             test_data,
-            monkeypatch,
             air_cli,
             capfd,
+            sync_resource,
+            status_resource,
         )
 
-    def test_get_cli_firmware_is_valid(self, air_cli, test_data, monkeypatch, capfd):
+    def test_get_cli_status_err193_is_valid(
+        self, sync_resource, status_resource, air_cli, test_data, capfd
+    ):
+        dataset = "coap-status-err193"
+        status_resource.change_dataset(dataset)
+        self.assert_cli_data(
+            air_cli.get_status,
+            "{}-cli".format(dataset),
+            test_data,
+            air_cli,
+            capfd,
+            sync_resource,
+            status_resource,
+        )
+
+    def test_get_cli_firmware_is_valid(
+        self, sync_resource, status_resource, air_cli, test_data, capfd
+    ):
         self.assert_cli_data(
             air_cli.get_firmware,
-            "plain-coap-firmware-cli",
+            "coap-firmware-cli",
             test_data,
-            monkeypatch,
             air_cli,
             capfd,
+            sync_resource,
+            status_resource,
         )
 
-    def test_get_cli_filters_is_valid(self, air_cli, test_data, monkeypatch, capfd):
+    def test_get_cli_filters_is_valid(
+        self, sync_resource, status_resource, air_cli, test_data, capfd
+    ):
         self.assert_cli_data(
             air_cli.get_filters,
-            "plain-coap-fltsts-cli",
+            "coap-fltsts-cli",
             test_data,
-            monkeypatch,
             air_cli,
             capfd,
+            sync_resource,
+            status_resource,
         )
 
-    def assert_json_data(self, air_func, dataset, test_data, monkeypatch, air_client):
-        def send_hello_sequence(client):
-            return
-
-        monkeypatch.setattr(air_client, "_send_hello_sequence", send_hello_sequence)
+    def assert_json_data(
+        self, air_func, dataset, test_data, air_client, sync_resource, status_resource
+    ):
+        status_resource.set_encryption_key(sync_resource.encryption_key)
 
         result = air_func()
         data = test_data[dataset]["data"]
@@ -215,14 +299,16 @@ class TestPlainCoap:
         assert result == json_data
 
     def assert_cli_data(
-        self, air_func, dataset, test_data, monkeypatch, air_cli, capfd
+        self,
+        air_func,
+        dataset,
+        test_data,
+        air_cli,
+        capfd,
+        sync_resource,
+        status_resource,
     ):
-        def send_hello_sequence(client):
-            return
-
-        monkeypatch.setattr(
-            air_cli._client, "_send_hello_sequence", send_hello_sequence
-        )
+        status_resource.set_encryption_key(sync_resource.encryption_key)
 
         air_func()
         result, err = capfd.readouterr()
