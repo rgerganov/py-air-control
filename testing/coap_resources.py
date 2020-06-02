@@ -8,7 +8,7 @@ from coapthon.resources.resource import Resource
 
 
 class SyncResource(Resource):
-    SYNC_KEY = "2170B935‬"
+    SYNC_KEY = "2170B935"
 
     def __init__(self, name="SyncResource"):
         super(SyncResource, self).__init__(name)
@@ -20,9 +20,28 @@ class SyncResource(Resource):
         return self, response
 
 
-class StatusResource(Resource):
+class EncryptedResourceBase(Resource):
     SECRET_KEY = "JiangPan"
 
+    def _handle_AES(self, id):
+        key_and_iv = hashlib.md5((self.SECRET_KEY + id).encode()).hexdigest().upper()
+        half_keylen = len(key_and_iv) // 2
+        secret_key = key_and_iv[0:half_keylen]
+        iv = key_and_iv[half_keylen:]
+        return AES.new(
+            bytes(secret_key.encode("utf8")), AES.MODE_CBC, bytes(iv.encode("utf8"))
+        )
+
+    def _create_digest(self, id, encoded_message):
+        digest = (
+            hashlib.sha256(bytes((id + encoded_message).encode("utf8")))
+            .hexdigest()
+            .upper()
+        )
+        return digest
+
+
+class StatusResource(EncryptedResourceBase):
     def __init__(self, name="StatusResource"):
         super(StatusResource, self).__init__(name)
         self.dataset = None
@@ -60,44 +79,36 @@ class StatusResource(Resource):
         digest = self._create_digest(self.encryption_key, encoded_message)
         return self.encryption_key + encoded_message + digest
 
-    def _handle_AES(self, id):
-        key_and_iv = hashlib.md5((self.SECRET_KEY + id).encode()).hexdigest().upper()
-        half_keylen = len(key_and_iv) // 2
-        secret_key = key_and_iv[0:half_keylen]
-        iv = key_and_iv[half_keylen:]
-        return AES.new(
-            bytes(secret_key.encode("utf8")), AES.MODE_CBC, bytes(iv.encode("utf8"))
-        )
 
-    def _create_digest(self, id, encoded_message):
-        digest = (
-            hashlib.sha256(bytes((id + encoded_message).encode("utf8")))
-            .hexdigest()
-            .upper()
-        )
-        return digest
-
-
-class ControlResource(Resource):
+class ControlResource(EncryptedResourceBase):
     def __init__(self, name="ControlResource"):
         super(ControlResource, self).__init__(name)
         self.content_type = "application/json"
-        self.data = []
+        self.data = None
 
-    def append_data(self, data):
-        self.data.append(data)
+    def set_data(self, data):
+        self.data = data
 
     def render_POST_advanced(self, request, response):
-        if self.data.count == 0:
+        if self.data is None:
             raise Exception("ControlResource: set data before running tests")
 
-        change_request = json.loads(request.payload)["state"]["desired"]
-
-        success = "failed"
-        for data in self.data:
-            if json.loads(data) == change_request:
-                success = "success"
-                break
+        encrypted_payload = request.payload
+        decrypted_payload = self._decrypt_payload(encrypted_payload)
+        change_request = json.loads(decrypted_payload)["state"]["desired"]
+        success = "success" if json.loads(self.data) == change_request else "failed"
 
         response.payload = '{{"status":"{}"}}'.format(success)
         return self, response
+
+    def _decrypt_payload(self, encrypted_payload):
+        encoded_counter = encrypted_payload[0:8]
+        aes = self._handle_AES(encoded_counter)
+        encoded_message = encrypted_payload[8:-64].upper()
+        digest = encrypted_payload[-64:]
+        calculated_digest = self._create_digest(encoded_counter, encoded_message)
+        if digest != calculated_digest:
+            raise Exception
+        decoded_message = aes.decrypt(bytes.fromhex(encoded_message))
+        unpaded_message = unpad(decoded_message, 16, style="pkcs7")
+        return unpaded_message.decode("utf8")

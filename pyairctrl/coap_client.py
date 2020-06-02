@@ -40,8 +40,12 @@ class HTTPAirClientBase(ABC):
     def set_values(self, values, debug=False):
         if debug:
             self.logger.setLevel("DEBUG")
+
+        result = True
         for key in values:
-            self._set(key, values[key])
+            result = result and self._set(key, values[key])
+
+        return result
 
     @abstractmethod
     def _get(self):
@@ -161,5 +165,6 @@ class CoAPAirClient(HTTPAirClientBase):
             response = self.client.post(path, encrypted_payload)
             if self.debug:
                 print(response)
+            return response.payload == '{"status":"success"}'
         except Exception as e:
             print("Unexpected error:{}".format(e))
