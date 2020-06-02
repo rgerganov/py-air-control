@@ -49,20 +49,10 @@
         "info": "status of AC2729/50 in cli",
         "data": "[name]        Name: Luftreiniger\n[modelid]     ModelId: http\n[swversion]   Version: 1.0.7\n[StatusType]  StatusType: localcontrol\n[ota]         Over the air updates: ck\n[Runtime]     Runtime: 15.29 hours\n[pwr]         Power: ON\n[pm25]        PM25: 1\n[iaql]        Allergen index: 1\n[mode]        Mode: allergen\n[om]          Fan speed: 1\n[aqil]        Light brightness: 75\n[uil]         Buttons light: 2\n[ddp]         Used index: IAI\n[cl]          Child lock: False\n[fltsts0]     Pre-filter and Wick: clean in 213 hours\n[fltsts1]     HEPA filter: replace in 4364 hours\n[fltsts2]     Active carbon filter: replace in 10487 hours\n[wicksts]     Wick filter: replace in 5 hours\n"
     },
-    "plain-coap-firmware": {
-        "device": "AC2729/50",
-        "info": "firmware of AC2729/50",
-        "data": "{\"swversion\": \"1.0.7\"}"
-    },
     "plain-coap-firmware-cli": {
         "device": "AC2729/50",
         "info": "firmware of AC2729/50 in cli",
         "data": "Software version: 1.0.7\nOver the air updates: ck\n"
-    },
-    "plain-coap-fltsts": {
-        "device": "AC2729/50",
-        "info": "filterstatus of AC2729/50",
-        "data": "{\"fltsts0\": 213, \"fltsts1\": 4364, \"fltsts2\": 10487, \"fltt1\": \"A3\", \"fltt2\": \"none\"}"
     },
     "plain-coap-fltsts-cli": {
         "device": "AC2729/50",
