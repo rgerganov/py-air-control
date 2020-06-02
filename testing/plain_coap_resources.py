@@ -36,7 +36,7 @@ class ControlResource(Resource):
         self.content_type = "application/json"
         self.data = []
 
-    def set_append_data(self, data):
+    def append_data(self, data):
         self.data.append(data)
 
     def render_POST_advanced(self, request, response):

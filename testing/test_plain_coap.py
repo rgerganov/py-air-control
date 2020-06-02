@@ -31,11 +31,8 @@ class TestPlainCoap:
         return StatusResource()
 
     @pytest.fixture(autouse=True)
-    def set_data_on_control_resource(self, control_resource):
-        control_resource.set_append_data('{"mode": "A"}')
-
-    @pytest.fixture(autouse=True)
-    def set_dataset_on_status_resource(self, status_resource):
+    def set_defaults(self, control_resource, status_resource):
+        control_resource.append_data('{"mode": "A"}')
         status_resource.set_dataset("plain-coap-status")
 
     def _test_data(self):
