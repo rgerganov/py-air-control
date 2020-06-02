@@ -32,7 +32,7 @@ class TestPlainCoap:
 
     @pytest.fixture(autouse=True)
     def set_data_on_control_resource(self, control_resource):
-        control_resource.set_data('{"mode": "A"}')
+        control_resource.set_append_data('{"mode": "A"}')
 
     @pytest.fixture(autouse=True)
     def set_dataset_on_status_resource(self, status_resource):

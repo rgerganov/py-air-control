@@ -34,17 +34,22 @@ class ControlResource(Resource):
     def __init__(self, name="ControlResource"):
         super(ControlResource, self).__init__(name)
         self.content_type = "application/json"
-        self.data = None
+        self.data = []
 
-    def set_data(self, data):
-        self.data = data
+    def set_append_data(self, data):
+        self.data.append(data)
 
     def render_POST_advanced(self, request, response):
-        if self.data is None:
+        if self.data.count == 0:
             raise Exception("ControlResource: set data before running tests")
 
         change_request = json.loads(request.payload)["state"]["desired"]
 
-        success = "success" if json.loads(self.data) == change_request else "failed"
-        response.payload = '{{"status":"{}"}}'.format("success")
+        success = "failed"
+        for data in self.data:
+            if json.loads(data) == change_request:
+                success = "success"
+                break
+
+        response.payload = '{{"status":"{}"}}'.format(success)
         return self, response
