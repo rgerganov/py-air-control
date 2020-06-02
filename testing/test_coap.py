@@ -40,9 +40,12 @@ class TestCoap:
         return ControlResource()
 
     @pytest.fixture(autouse=True)
-    def set_defaults(self, control_resource, status_resource):
-        control_resource.append_data('{"mode": "A"}')
+    def set_defaults(self, sync_resource, control_resource, status_resource):
+        control_resource.set_data(
+            '{"CommandType": "app", "DeviceId": "", "EnduserId": "", "mode": "A"}'
+        )
         status_resource.set_dataset("coap-status")
+        status_resource.set_encryption_key(sync_resource.encryption_key)
 
     @pytest.fixture(scope="class", autouse=True)
     def coap_server(self, sync_resource, status_resource, control_resource):
@@ -54,11 +57,11 @@ class TestCoap:
         yield server
         server.stop()
 
-    # def test_set_values(self, air_client):
-    #     values = {}
-    #     values["mode"] = "A"
-    #     result = air_client.set_values(values)
-    #     assert result
+    def test_set_values(self, air_client):
+        values = {}
+        values["mode"] = "A"
+        result = air_client.set_values(values)
+        assert result
 
     def test_get_status_is_valid(
         self, sync_resource, status_resource, air_client, test_data
@@ -153,8 +156,6 @@ class TestCoap:
     def assert_json_data(
         self, air_func, dataset, test_data, air_client, sync_resource, status_resource
     ):
-        status_resource.set_encryption_key(sync_resource.encryption_key)
-
         result = air_func()
         data = test_data[dataset]["data"]
         json_data = json.loads(data)
@@ -170,8 +171,6 @@ class TestCoap:
         sync_resource,
         status_resource,
     ):
-        status_resource.set_encryption_key(sync_resource.encryption_key)
-
         air_func()
         result, err = capfd.readouterr()
         assert result == test_data[dataset]["data"]
