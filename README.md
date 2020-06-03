@@ -12,6 +12,10 @@ Python 3.4+ is required. Install with `pip3`:
 ```
 $ pip3 install py-air-control
 ```
+If your device is using CoAP then update the `CoAPthon3` dependency to get a fix for a known [bug](https://github.com/Tanganelli/CoAPthon3/issues/29):
+```
+$ pip install -U git+https://github.com/Tanganelli/CoAPthon3@89d5173
+```
 
 Wi-Fi setup
 ---

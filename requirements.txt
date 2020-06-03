@@ -1,2 +1,3 @@
 pycryptodomex>=3.4.7
-CoAPthon3>=1.0.1
+# see https://github.com/Tanganelli/CoAPthon3/issues/29
+CoAPthon3 @ git+https://github.com/Tanganelli/CoAPthon3@89d5173
