@@ -48,12 +48,16 @@ class StatusResource(EncryptedResourceBase):
         self.test_data = self._test_data()
         self.content_type = "application/json"
         self.encryption_key = None
+        self.render_callback = None
 
     def set_encryption_key(self, encryption_key):
         self.encryption_key = encryption_key
 
     def set_dataset(self, dataset):
         self.dataset = dataset
+
+    def set_render_callback(self, render_callback):
+        self.render_callback = render_callback
 
     def _test_data(self):
         dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -70,6 +74,8 @@ class StatusResource(EncryptedResourceBase):
             self.test_data[self.dataset]["data"]
         )
         response.payload = self._encrypt_payload(response.payload)
+        if self.render_callback is not None:
+            response.payload = self.render_callback(response.payload)
         return self, response
 
     def _encrypt_payload(self, payload):
@@ -85,6 +91,7 @@ class ControlResource(EncryptedResourceBase):
         super(ControlResource, self).__init__(name)
         self.content_type = "application/json"
         self.data = None
+        self.encoded_counter = None
 
     def set_data(self, data):
         self.data = data
@@ -102,11 +109,11 @@ class ControlResource(EncryptedResourceBase):
         return self, response
 
     def _decrypt_payload(self, encrypted_payload):
-        encoded_counter = encrypted_payload[0:8]
-        aes = self._handle_AES(encoded_counter)
+        self.encoded_counter = encrypted_payload[0:8]
+        aes = self._handle_AES(self.encoded_counter)
         encoded_message = encrypted_payload[8:-64].upper()
         digest = encrypted_payload[-64:]
-        calculated_digest = self._create_digest(encoded_counter, encoded_message)
+        calculated_digest = self._create_digest(self.encoded_counter, encoded_message)
         if digest != calculated_digest:
             raise Exception
         decoded_message = aes.decrypt(bytes.fromhex(encoded_message))

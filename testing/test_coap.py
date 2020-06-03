@@ -46,6 +46,7 @@ class TestCoap:
         )
         status_resource.set_dataset("coap-status")
         status_resource.set_encryption_key(sync_resource.encryption_key)
+        status_resource.set_render_callback(None)
 
     @pytest.fixture(scope="class", autouse=True)
     def coap_server(self, sync_resource, status_resource, control_resource):
@@ -57,11 +58,34 @@ class TestCoap:
         yield server
         server.stop()
 
+    def test_sync_was_called(self, air_client):
+        assert air_client.client_key == SyncResource.SYNC_KEY
+
     def test_set_values(self, air_client):
         values = {}
         values["mode"] = "A"
         result = air_client.set_values(values)
         assert result
+
+    def test_key_is_increased(self, control_resource):
+        air_client = CoAPAirClient("127.0.0.1")
+        values = {}
+        values["mode"] = "A"
+        result = air_client.set_values(values)
+        assert (
+            int(control_resource.encoded_counter, 16)
+            == int(SyncResource.SYNC_KEY, 16) + 1
+        )
+
+    def test_response_is_cut_off_should_return_error(self, status_resource, capfd):
+        air_client = CoAPAirClient("127.0.0.1")
+        status_resource.set_render_callback(self.cutoff_data)
+        air_client.get_status()
+        result, err = capfd.readouterr()
+        assert "Message from device got corrupted" in result
+
+    def cutoff_data(self, data):
+        return data[:-8]
 
     def test_get_status_is_valid(
         self, sync_resource, status_resource, air_client, test_data
@@ -69,6 +93,20 @@ class TestCoap:
         self.assert_json_data(
             air_client.get_status,
             "coap-status",
+            test_data,
+            air_client,
+            sync_resource,
+            status_resource,
+        )
+
+    def test_get_status_longsize_is_valid(
+        self, sync_resource, status_resource, air_client, test_data
+    ):
+        dataset = "coap-status-longsize"
+        status_resource.set_dataset(dataset)
+        self.assert_json_data(
+            air_client.get_status,
+            dataset,
             test_data,
             air_client,
             sync_resource,
