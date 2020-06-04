@@ -140,4 +140,5 @@ class TestPlainCoap:
 
         air_func()
         result, err = capfd.readouterr()
+
         assert result == test_data[dataset]["data"]

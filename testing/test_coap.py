@@ -150,6 +150,21 @@ class TestCoap:
             status_resource,
         )
 
+    def test_get_cli_status_for_AC3858_is_valid(
+        self, sync_resource, status_resource, air_cli, test_data, capfd
+    ):
+        dataset = "coap-status-AC3858"
+        status_resource.set_dataset(dataset)
+        self.assert_cli_data(
+            air_cli.get_status,
+            "{}-cli".format(dataset),
+            test_data,
+            air_cli,
+            capfd,
+            sync_resource,
+            status_resource,
+        )
+
     def test_get_cli_status_err193_is_valid(
         self, sync_resource, status_resource, air_cli, test_data, capfd
     ):

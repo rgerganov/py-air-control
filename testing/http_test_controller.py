@@ -20,6 +20,11 @@ class HttpTestController:
         16,
     )
 
+    _urlMapping = {
+        "http://127.0.0.1/di/v1/products/0/wifi": "http-wifi",
+        "http://127.0.0.1/di/v1/products/1/air": "http-status",
+    }
+
     def __init__(self, device_key):
         self._override_dataset = None
         self._test_data = self._init_test_data()
@@ -108,9 +113,14 @@ class HttpTestController:
             self._decrypt(_encrypted_data, bytes(self._device_key.encode("ascii")))
         )
 
-        success = "success" if data == json.loads(valid_data) else "failed"
+        if data != json.loads(valid_data):
+            json_data = json.loads("{}")
+        else:
+            dataset = self._urlMapping[flask.request.url]
+            status_data = self._test_data[dataset]["data"]
+            json_data = json.loads(status_data)
 
-        return self._padding_encrypt(
-            json.loads('{{"status":"{}"}}'.format(success)),
-            bytes(self._device_key.encode("ascii")),
+        _encrypted_data = self._padding_encrypt(
+            json_data, bytes(self._device_key.encode("ascii"))
         )
+        return _encrypted_data
