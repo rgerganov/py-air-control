@@ -74,15 +74,19 @@ class TestHTTP:
         current_key = air_client.load_key()
         assert current_key.decode("ascii") == self.device_key
 
-    def test_set_values(self, air_client):
+    def test_set_values(self, air_client, test_data):
         values = {}
         values["mode"] = "A"
         result = air_client.set_values(values)
-        assert result == json.loads('{"status":"success"}')
+        data = test_data["http-status"]["data"]
+        json_data = json.loads(data)
+        assert result == json_data
 
-    def test_set_wifi(self, air_client):
+    def test_set_wifi(self, air_client, test_data):
         result = air_client.set_wifi("1234", "5678")
-        assert result == json.loads('{"status":"success"}')
+        data = test_data["http-wifi"]["data"]
+        json_data = json.loads(data)
+        assert result == json_data
 
     def test_get_status_is_valid(self, air_client, test_data, controller):
         self.assert_json_data(air_client.get_status, "http-status", test_data)
@@ -109,6 +113,13 @@ class TestHTTP:
 
     def test_get_cli_filters_is_valid(self, air_cli, test_data, capfd):
         self.assert_cli_data(air_cli.get_filters, "http-fltsts-cli", test_data, capfd)
+
+    def test_set_values_cli_is_valid(self, air_cli, test_data, capfd):
+        values = {}
+        values["mode"] = "A"
+        air_cli.set_values(values)
+        result, err = capfd.readouterr()
+        assert result == test_data["http-status-cli"]["data"]
 
     def assert_json_data(self, air_func, dataset, test_data):
         result = air_func()
