@@ -8,6 +8,7 @@ import json
 import logging
 import os
 from abc import ABC, abstractmethod
+from collections import OrderedDict
 
 from coapthon import defines
 from coapthon.client.helperclient import HelperClient
@@ -144,7 +145,9 @@ class CoAPAirClient(HTTPAirClientBase):
             print("Unexpected error:{}".format(e))
 
         if decrypted_payload is not None:
-            return json.loads(decrypted_payload)["state"]["reported"]
+            return json.loads(decrypted_payload, object_pairs_hook=OrderedDict)[
+                "state"
+            ]["reported"]
         else:
             return {}
 
