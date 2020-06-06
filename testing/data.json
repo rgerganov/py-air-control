@@ -2,7 +2,7 @@
     "http": {
         "status": {
             "device": "AC2729/10",
-            "info": "Status of AC2729/10",
+            "info": "Status",
             "execute": [
                 "get_status()",
                 "set_status()"
@@ -11,7 +11,7 @@
         },
         "status-cli": {
             "device": "AC2729/10",
-            "info": "Status of AC2729/10",
+            "info": "Status",
             "execute": [
                 "airctrl --protocol http"
             ],
@@ -19,7 +19,7 @@
         },
         "wifi": {
             "device": "AC2729/10",
-            "info": "Wifi-information of AC2729/10",
+            "info": "Wifi-information",
             "execute": [
                 "get_wifi()"
             ],
@@ -27,7 +27,7 @@
         },
         "wifi-cli": {
             "device": "AC2729/10",
-            "info": "Wifi-information of AC2729/10",
+            "info": "Wifi-information",
             "execute": [
                 "airctrl --protocol http --wifi"
             ],
@@ -35,7 +35,7 @@
         },
         "firmware": {
             "device": "AC2729/10",
-            "info": "Firmware-information of AC2729/10",
+            "info": "Firmware-information",
             "execute": [
                 "get_firmware()"
             ],
@@ -43,7 +43,7 @@
         },
         "firmware-cli": {
             "device": "AC2729/10",
-            "info": "Firmware-information of AC2729/10",
+            "info": "Firmware-information",
             "execute": [
                 "airctrl --protocol http --firmware"
             ],
@@ -51,7 +51,7 @@
         },
         "fltsts": {
             "device": "AC2729/10",
-            "info": "Filter-information of AC2729/10",
+            "info": "Filter-information",
             "execute": [
                 "get_filters()"
             ],
@@ -59,7 +59,7 @@
         },
         "fltsts-cli": {
             "device": "AC2729/10",
-            "info": "Filter-information of AC2729/10",
+            "info": "Filter-information",
             "execute": [
                 "airctrl --protocol http --filters"
             ],
@@ -69,7 +69,7 @@
     "plain-coap": {
         "status": {
             "device": "AC2729/50",
-            "info": "Status of AC2729/50",
+            "info": "Status",
             "execute": [
                 "get_status()"
             ],
@@ -77,7 +77,7 @@
         },
         "status-cli": {
             "device": "AC2729/50",
-            "info": "Status of AC2729/50",
+            "info": "Status",
             "execute": [
                 "airctrl --protocol plain_coap"
             ],
@@ -85,7 +85,7 @@
         },
         "firmware-cli": {
             "device": "AC2729/50",
-            "info": "Firmware-information of AC2729/50",
+            "info": "Firmware-information",
             "execute": [
                 "airctrl --protocol plain_coap --firmware"
             ],
@@ -93,7 +93,7 @@
         },
         "fltsts-cli": {
             "device": "AC2729/50",
-            "info": "Filter-information of AC2729/50",
+            "info": "Filter-information",
             "execute": [
                 "airctrl --protocol plain_coap --filters"
             ],
@@ -103,7 +103,7 @@
     "coap": {
         "status": {
             "device": "AC2889/10",
-            "info": "Status of AC2889/10",
+            "info": "Status",
             "execute": [
                 "get_status()"
             ],
@@ -111,7 +111,7 @@
         },
         "status-cli": {
             "device": "AC2889/10",
-            "info": "Status of AC2889/10",
+            "info": "Status",
             "execute": [
                 "airctrl --protocol coap"
             ],
@@ -119,7 +119,7 @@
         },
         "firmware-cli": {
             "device": "AC2889/10",
-            "info": "Firmware-information of AC2889/10",
+            "info": "Firmware-information",
             "execute": [
                 "airctrl --protocol coap --firmware"
             ],
@@ -127,7 +127,7 @@
         },
         "fltsts-cli": {
             "device": "AC2889/10",
-            "info": "Firmware-information of AC2889/10",
+            "info": "Firmware-information",
             "execute": [
                 "airctrl --protocol coap --filters"
             ],
@@ -135,7 +135,7 @@
         },
         "status-err193": {
             "device": "AC2889/10",
-            "info": "Status of AC2889/10 with err 193 (Clean Prefilter)",
+            "info": "Status with err 193 - Clean Prefilter",
             "execute": [
                 "get_status()"
             ],
@@ -143,7 +143,7 @@
         },
         "status-err193-cli": {
             "device": "AC2889/10",
-            "info": "Status of AC2889/10 with err 193 (Clean Prefilter)",
+            "info": "Status with err 193 - Clean Prefilter",
             "execute": [
                 "airctrl --protocol coap"
             ],
@@ -151,7 +151,7 @@
         },
         "status-longsize": {
             "device": "AC2729/50",
-            "info": "Status of AC2729/50 (device with many values)",
+            "info": "Status of device with many values",
             "execute": [
                 "get_status()"
             ],
@@ -159,19 +159,19 @@
         },
         "status-AC3858": {
             "device": "AC3858/50",
-            "info": "Status of AC3858/50 (another device with many values)",
+            "info": "Status of another device with many values",
             "execute": [
                 "get_status()"
             ],
-            "data": "{\"ConnectType\":\"Localcontrol\",\"DeviceId\":\"00000000000000000000000000000000\",\"ProductId\":\"0000000000000000000000000000000\",\"Runtime\":611108689,\"StatusType\":\"localcontrol\",\"WifiVersion\":\"AWS_Philips_AIR@53\",\"aqil\":100,\"aqit\":10,\"cl\":false,\"ddp\":\"1\",\"err\":0,\"filid\":\"AC30360123456789012\",\"filna\":\"AC3036\",\"fltsts0\":154,\"fltsts1\":4560,\"fltsts2\":65535,\"fltt1\":\"A3\",\"fltt2\":\"none\",\"iaql\":7,\"language\":\"EN\",\"mode\":\"AG\",\"modelid\":\"AC3858/50\",\"name\":\"LivingRoom\",\"om\":\"0\",\"ota\":\"no\",\"pm25\":40,\"pwr\":\"0\",\"rddp\":\"1\",\"swversion\":\"Ms4102\",\"tvoc\":1,\"type\":\"AC3858\",\"uaset\":\"A\",\"uil\":\"1\"}"
+            "data": "{\"ConnectType\":\"Localcontrol\",\"DeviceId\":\"00000000000000000000000000000000\",\"ProductId\":\"0000000000000000000000000000001\",\"Runtime\":611108689,\"StatusType\":\"localcontrol\",\"WifiVersion\":\"AWS_Philips_AIR@53\",\"aqil\":100,\"aqit\":10,\"cl\":false,\"ddp\":\"1\",\"err\":0,\"filid\":\"AC30360123456789012\",\"filna\":\"AC3036\",\"fltsts0\":154,\"fltsts1\":4560,\"fltsts2\":65535,\"fltt1\":\"A3\",\"fltt2\":\"none\",\"iaql\":7,\"language\":\"EN\",\"mode\":\"AG\",\"modelid\":\"AC3858/50\",\"name\":\"LivingRoom\",\"om\":\"0\",\"ota\":\"no\",\"pm25\":40,\"pwr\":\"0\",\"rddp\":\"1\",\"swversion\":\"Ms4102\",\"tvoc\":1,\"type\":\"AC3858\",\"uaset\":\"A\",\"uil\":\"1\"}"
         },
         "status-AC3858-cli": {
             "device": "AC3858/50",
-            "info": "Status of AC3858/50 (another device with many values)",
+            "info": "Status of another device with many values",
             "execute": [
                 "airctrl --protocol coap"
             ],
-            "data": "[ConnectType]                 ConnectType: Localcontrol\n[DeviceId]                    DeviceId: 00000000000000000000000000000000\n[ProductId]                   ProductId: 0000000000000000000000000000000\n[Runtime]                     Runtime: 1.75 hours\n[StatusType]                  StatusType: localcontrol\n[WifiVersion]                 WifiVersion: AWS_Philips_AIR@53\n[aqil]                        Light brightness: 100\n[aqit]                        Air quality notification threshold: 10\n[cl]                          Child lock: False\n[ddp]                         Used index: PM2.5\n[filid]                       filid: AC30360123456789012\n[filna]                       filna: AC3036\n[fltsts0]                     Pre-filter and Wick: clean in 154 hours\n[fltsts1]                     HEPA filter: replace in 4560 hours\n[fltsts2]                     Active carbon filter: replace in 65535 hours\n[fltt1]                       HEPA filter type: NanoProtect Filter Series 3 (FY2422)\n[fltt2]                       Active carbon filter type: none\n[iaql]                        Allergen index: 7\n[language]                    language: EN\n[mode]                        Mode: AG\n[modelid]                     ModelId: AC3858/50\n[name]                        Name: LivingRoom\n[om]                          Fan speed: 0\n[ota]                         Over the air updates: no\n[pm25]                        PM25: 40\n[pwr]                         Power: OFF\n[rddp]                        rddp: 1\n[swversion]                   Version: Ms4102\n[tvoc]                        tvoc: 1\n[type]                        Type: AC3858\n[uaset]                       uaset: A\n[uil]                         Buttons light: ON\n"
+            "data": "[ConnectType]                 ConnectType: Localcontrol\n[DeviceId]                    DeviceId: 00000000000000000000000000000000\n[ProductId]                   ProductId: 0000000000000000000000000000001\n[Runtime]                     Runtime: 1.75 hours\n[StatusType]                  StatusType: localcontrol\n[WifiVersion]                 WifiVersion: AWS_Philips_AIR@53\n[aqil]                        Light brightness: 100\n[aqit]                        Air quality notification threshold: 10\n[cl]                          Child lock: False\n[ddp]                         Used index: PM2.5\n[filid]                       filid: AC30360123456789012\n[filna]                       filna: AC3036\n[fltsts0]                     Pre-filter and Wick: clean in 154 hours\n[fltsts1]                     HEPA filter: replace in 4560 hours\n[fltsts2]                     Active carbon filter: replace in 65535 hours\n[fltt1]                       HEPA filter type: NanoProtect Filter Series 3 (FY2422)\n[fltt2]                       Active carbon filter type: none\n[iaql]                        Allergen index: 7\n[language]                    language: EN\n[mode]                        Mode: AG\n[modelid]                     ModelId: AC3858/50\n[name]                        Name: LivingRoom\n[om]                          Fan speed: 0\n[ota]                         Over the air updates: no\n[pm25]                        PM25: 40\n[pwr]                         Power: OFF\n[rddp]                        rddp: 1\n[swversion]                   Version: Ms4102\n[tvoc]                        tvoc: 1\n[type]                        Type: AC3858\n[uaset]                       uaset: A\n[uil]                         Buttons light: ON\n"
         }
     }
 }
