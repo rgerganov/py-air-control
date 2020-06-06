@@ -21,8 +21,8 @@ class HttpTestController:
     )
 
     _urlMapping = {
-        "http://127.0.0.1/di/v1/products/0/wifi": "http-wifi",
-        "http://127.0.0.1/di/v1/products/1/air": "http-status",
+        "http://127.0.0.1/di/v1/products/0/wifi": "wifi",
+        "http://127.0.0.1/di/v1/products/1/air": "status",
     }
 
     def __init__(self, device_key):
@@ -82,25 +82,25 @@ class HttpTestController:
         return data_enc
 
     def get_status(self):
-        return self._callback_get_data("http-status")
+        return self._callback_get_data("status")
 
     def set_status(self):
         return self._callback_set_data('{"mode": "A"}')
 
     def get_wifi(self):
-        return self._callback_get_data("http-wifi")
+        return self._callback_get_data("wifi")
 
     def set_wifi(self):
         return self._callback_set_data('{"ssid": "1234", "password": "5678"}')
 
     def get_firmware(self):
-        return self._callback_get_data("http-firmware")
+        return self._callback_get_data("firmware")
 
     def get_filters(self):
-        return self._callback_get_data("http-fltsts")
+        return self._callback_get_data("fltsts")
 
     def _callback_get_data(self, dataset):
-        data = self._test_data[dataset]["data"]
+        data = self._test_data["http"][dataset]["data"]
         json_data = json.loads(data)
         _encrypted_data = self._padding_encrypt(
             json_data, bytes(self._device_key.encode("ascii"))
@@ -117,7 +117,7 @@ class HttpTestController:
             json_data = json.loads("{}")
         else:
             dataset = self._urlMapping[flask.request.url]
-            status_data = self._test_data[dataset]["data"]
+            status_data = self._test_data["http"][dataset]["data"]
             json_data = json.loads(status_data)
 
         _encrypted_data = self._padding_encrypt(
