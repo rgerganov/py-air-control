@@ -44,7 +44,7 @@ class TestCoap:
         control_resource.set_data(
             '{"CommandType": "app", "DeviceId": "", "EnduserId": "", "mode": "A"}'
         )
-        status_resource.set_dataset("coap-status")
+        status_resource.set_dataset("status")
         status_resource.set_encryption_key(sync_resource.encryption_key)
         status_resource.set_render_callback(None)
 
@@ -92,7 +92,7 @@ class TestCoap:
     ):
         self.assert_json_data(
             air_client.get_status,
-            "coap-status",
+            "status",
             test_data,
             air_client,
             sync_resource,
@@ -102,7 +102,7 @@ class TestCoap:
     def test_get_status_longsize_is_valid(
         self, sync_resource, status_resource, air_client, test_data
     ):
-        dataset = "coap-status-longsize"
+        dataset = "status-longsize"
         status_resource.set_dataset(dataset)
         self.assert_json_data(
             air_client.get_status,
@@ -118,7 +118,7 @@ class TestCoap:
     ):
         self.assert_json_data(
             air_client.get_firmware,
-            "coap-status",
+            "status",
             test_data,
             air_client,
             sync_resource,
@@ -130,7 +130,7 @@ class TestCoap:
     ):
         self.assert_json_data(
             air_client.get_filters,
-            "coap-status",
+            "status",
             test_data,
             air_client,
             sync_resource,
@@ -142,7 +142,7 @@ class TestCoap:
     ):
         self.assert_cli_data(
             air_cli.get_status,
-            "coap-status-cli",
+            "status-cli",
             test_data,
             air_cli,
             capfd,
@@ -153,7 +153,7 @@ class TestCoap:
     def test_get_cli_status_for_AC3858_is_valid(
         self, sync_resource, status_resource, air_cli, test_data, capfd
     ):
-        dataset = "coap-status-AC3858"
+        dataset = "status-AC3858"
         status_resource.set_dataset(dataset)
         self.assert_cli_data(
             air_cli.get_status,
@@ -168,7 +168,7 @@ class TestCoap:
     def test_get_cli_status_err193_is_valid(
         self, sync_resource, status_resource, air_cli, test_data, capfd
     ):
-        dataset = "coap-status-err193"
+        dataset = "status-err193"
         status_resource.set_dataset(dataset)
         self.assert_cli_data(
             air_cli.get_status,
@@ -185,7 +185,7 @@ class TestCoap:
     ):
         self.assert_cli_data(
             air_cli.get_firmware,
-            "coap-firmware-cli",
+            "firmware-cli",
             test_data,
             air_cli,
             capfd,
@@ -198,7 +198,7 @@ class TestCoap:
     ):
         self.assert_cli_data(
             air_cli.get_filters,
-            "coap-fltsts-cli",
+            "fltsts-cli",
             test_data,
             air_cli,
             capfd,
@@ -210,7 +210,7 @@ class TestCoap:
         self, air_func, dataset, test_data, air_client, sync_resource, status_resource
     ):
         result = air_func()
-        data = test_data[dataset]["data"]
+        data = test_data["coap"][dataset]["data"]
         json_data = json.loads(data)
         assert result == json_data
 
@@ -226,4 +226,4 @@ class TestCoap:
     ):
         air_func()
         result, err = capfd.readouterr()
-        assert result == test_data[dataset]["data"]
+        assert result == test_data["coap"][dataset]["data"]

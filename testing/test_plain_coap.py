@@ -33,7 +33,7 @@ class TestPlainCoap:
     @pytest.fixture(autouse=True)
     def set_defaults(self, control_resource, status_resource):
         control_resource.append_data('{"mode": "A"}')
-        status_resource.set_dataset("plain-coap-status")
+        status_resource.set_dataset("status")
 
     def _test_data(self):
         dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -62,45 +62,28 @@ class TestPlainCoap:
 
     def test_get_status_is_valid(self, air_client, test_data, monkeypatch):
         self.assert_json_data(
-            air_client.get_status,
-            "plain-coap-status",
-            test_data,
-            monkeypatch,
-            air_client,
+            air_client.get_status, "status", test_data, monkeypatch, air_client,
         )
 
     def test_get_firmware_is_valid(self, air_client, test_data, monkeypatch):
         self.assert_json_data(
-            air_client.get_firmware,
-            "plain-coap-status",
-            test_data,
-            monkeypatch,
-            air_client,
+            air_client.get_firmware, "status", test_data, monkeypatch, air_client,
         )
 
     def test_get_filters_is_valid(self, air_client, test_data, monkeypatch):
         self.assert_json_data(
-            air_client.get_filters,
-            "plain-coap-status",
-            test_data,
-            monkeypatch,
-            air_client,
+            air_client.get_filters, "status", test_data, monkeypatch, air_client,
         )
 
     def test_get_cli_status_is_valid(self, air_cli, test_data, monkeypatch, capfd):
         self.assert_cli_data(
-            air_cli.get_status,
-            "plain-coap-status-cli",
-            test_data,
-            monkeypatch,
-            air_cli,
-            capfd,
+            air_cli.get_status, "status-cli", test_data, monkeypatch, air_cli, capfd,
         )
 
     def test_get_cli_firmware_is_valid(self, air_cli, test_data, monkeypatch, capfd):
         self.assert_cli_data(
             air_cli.get_firmware,
-            "plain-coap-firmware-cli",
+            "firmware-cli",
             test_data,
             monkeypatch,
             air_cli,
@@ -109,12 +92,7 @@ class TestPlainCoap:
 
     def test_get_cli_filters_is_valid(self, air_cli, test_data, monkeypatch, capfd):
         self.assert_cli_data(
-            air_cli.get_filters,
-            "plain-coap-fltsts-cli",
-            test_data,
-            monkeypatch,
-            air_cli,
-            capfd,
+            air_cli.get_filters, "fltsts-cli", test_data, monkeypatch, air_cli, capfd,
         )
 
     def assert_json_data(self, air_func, dataset, test_data, monkeypatch, air_client):
@@ -124,7 +102,7 @@ class TestPlainCoap:
         monkeypatch.setattr(air_client, "_send_hello_sequence", send_hello_sequence)
 
         result = air_func()
-        data = test_data[dataset]["data"]
+        data = test_data["plain-coap"][dataset]["data"]
         json_data = json.loads(data)
         assert result == json_data
 
@@ -141,4 +119,4 @@ class TestPlainCoap:
         air_func()
         result, err = capfd.readouterr()
 
-        assert result == test_data[dataset]["data"]
+        assert result == test_data["plain-coap"][dataset]["data"]

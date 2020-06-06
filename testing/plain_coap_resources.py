@@ -25,7 +25,7 @@ class StatusResource(Resource):
             raise Exception("StatusResource: set dataset before running tests")
 
         response.payload = '{{"state":{{"reported": {} }} }}'.format(
-            self.test_data[self.dataset]["data"]
+            self.test_data["plain-coap"][self.dataset]["data"]
         )
         return self, response
 

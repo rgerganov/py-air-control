@@ -78,56 +78,54 @@ class TestHTTP:
         values = {}
         values["mode"] = "A"
         result = air_client.set_values(values)
-        data = test_data["http-status"]["data"]
+        data = test_data["http"]["status"]["data"]
         json_data = json.loads(data)
         assert result == json_data
 
     def test_set_wifi(self, air_client, test_data):
         result = air_client.set_wifi("1234", "5678")
-        data = test_data["http-wifi"]["data"]
+        data = test_data["http"]["wifi"]["data"]
         json_data = json.loads(data)
         assert result == json_data
 
     def test_get_status_is_valid(self, air_client, test_data, controller):
-        self.assert_json_data(air_client.get_status, "http-status", test_data)
+        self.assert_json_data(air_client.get_status, "status", test_data)
 
     def test_get_wifi_is_valid(self, air_client, test_data):
-        self.assert_json_data(air_client.get_wifi, "http-wifi", test_data)
+        self.assert_json_data(air_client.get_wifi, "wifi", test_data)
 
     def test_get_firmware_is_valid(self, air_client, test_data):
-        self.assert_json_data(air_client.get_firmware, "http-firmware", test_data)
+        self.assert_json_data(air_client.get_firmware, "firmware", test_data)
 
     def test_get_filters_is_valid(self, air_client, test_data):
-        self.assert_json_data(air_client.get_filters, "http-fltsts", test_data)
+        self.assert_json_data(air_client.get_filters, "fltsts", test_data)
 
     def test_get_cli_status_is_valid(self, air_cli, test_data, capfd):
-        self.assert_cli_data(air_cli.get_status, "http-status-cli", test_data, capfd)
+        self.assert_cli_data(air_cli.get_status, "status-cli", test_data, capfd)
 
     def test_get_cli_wifi_is_valid(self, air_cli, test_data, capfd):
-        self.assert_cli_data(air_cli.get_wifi, "http-wifi-cli", test_data, capfd)
+        self.assert_cli_data(air_cli.get_wifi, "wifi-cli", test_data, capfd)
 
     def test_get_cli_firmware_is_valid(self, air_cli, test_data, capfd):
-        self.assert_cli_data(
-            air_cli.get_firmware, "http-firmware-cli", test_data, capfd
-        )
+        self.assert_cli_data(air_cli.get_firmware, "firmware-cli", test_data, capfd)
 
     def test_get_cli_filters_is_valid(self, air_cli, test_data, capfd):
-        self.assert_cli_data(air_cli.get_filters, "http-fltsts-cli", test_data, capfd)
+        self.assert_cli_data(air_cli.get_filters, "fltsts-cli", test_data, capfd)
 
     def test_set_values_cli_is_valid(self, air_cli, test_data, capfd):
         values = {}
         values["mode"] = "A"
         air_cli.set_values(values)
         result, err = capfd.readouterr()
-        assert result == test_data["http-status-cli"]["data"]
+        assert result == test_data["http"]["status-cli"]["data"]
 
     def assert_json_data(self, air_func, dataset, test_data):
         result = air_func()
-        data = test_data[dataset]["data"]
+        data = test_data["http"][dataset]["data"]
         json_data = json.loads(data)
         assert result == json_data
 
     def assert_cli_data(self, air_func, dataset, test_data, capfd):
         air_func()
         result, err = capfd.readouterr()
-        assert result == test_data[dataset]["data"]
+        assert result == test_data["http"][dataset]["data"]
