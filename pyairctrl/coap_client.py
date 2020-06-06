@@ -80,6 +80,7 @@ class CoAPAirClient(HTTPAirClientBase):
         self._sync()
 
     def __del__(self):
+        # TODO call a close method explicitly instead
         self.client.stop()
 
     def _create_coap_client(self, host, port):
