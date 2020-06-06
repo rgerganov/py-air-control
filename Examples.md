@@ -1,0 +1,306 @@
+# http
+## Status (Device: AC2729/10)
+Execution:
+- get_status()
+- set_status()
+
+Output:
+
+{"aqil": 100, "aqit": 0, "cl": false, "ddp": "1", "dt": 0, "dtrs": 0, "err": 0, "func": "P", "iaql": 2, "mode": "M", "om": "1", "pm25": 8, "pwr": "1", "rddp": "1", "rh": 30, "rhset": 60, "temp": 24, "uil": "1", "wl": 100}
+## Status (Device: AC2729/10)
+Execution:
+- airctrl --protocol http
+
+Output:
+
+[pwr]   Power: ON<br/>
+[pm25]  PM25: 8<br/>
+[rh]    Humidity: 30<br/>
+[rhset] Target humidity: 60<br/>
+[iaql]  Allergen index: 2<br/>
+[temp]  Temperature: 24<br/>
+[func]  Function: Purification<br/>
+[mode]  Mode: manual<br/>
+[om]    Fan speed: 1<br/>
+[aqil]  Light brightness: 100<br/>
+[uil]   Buttons light: ON<br/>
+[ddp]   Used index: PM2.5<br/>
+[wl]    Water level: 100<br/>
+[cl]    Child lock: False<br/>
+
+## Wifi-information (Device: AC2729/10)
+Execution:
+- get_wifi()
+
+Output:
+
+{"cppid": "0000000000000000", "dhcp": true, "gateway": "127.0.0.1", "ipaddress": "127.0.0.2", "macaddress": "00:00:00:00:00:00", "netmask": "255.255.255.0", "password": "xxx", "protection": "wpa-2", "ssid": "My SSID"}
+## Wifi-information (Device: AC2729/10)
+Execution:
+- airctrl --protocol http --wifi
+
+Output:
+
+{'cppid': '0000000000000000',<br/>
+ 'dhcp': True,<br/>
+ 'gateway': '127.0.0.1',<br/>
+ 'ipaddress': '127.0.0.2',<br/>
+ 'macaddress': '00:00:00:00:00:00',<br/>
+ 'netmask': '255.255.255.0',<br/>
+ 'password': 'xxx',<br/>
+ 'protection': 'wpa-2',<br/>
+ 'ssid': 'My SSID'}<br/>
+
+## Firmware-information (Device: AC2729/10)
+Execution:
+- get_firmware()
+
+Output:
+
+{"mandatory": false, "name": "AC2729_10", "progress": 0, "state": "idle", "statusmsg": "", "upgrade": "", "version": "8"}
+## Firmware-information (Device: AC2729/10)
+Execution:
+- airctrl --protocol http --firmware
+
+Output:
+
+{'mandatory': False,<br/>
+ 'name': 'AC2729_10',<br/>
+ 'progress': 0,<br/>
+ 'state': 'idle',<br/>
+ 'statusmsg': '',<br/>
+ 'upgrade': '',<br/>
+ 'version': '8'}<br/>
+
+## Filter-information (Device: AC2729/10)
+Execution:
+- get_filters()
+
+Output:
+
+{"fltsts0": 33, "fltsts1": 1141, "fltsts2": 1142, "wicksts": 1140}
+## Filter-information (Device: AC2729/10)
+Execution:
+- airctrl --protocol http --filters
+
+Output:
+
+Pre-filter and Wick: clean in 33 hours<br/>
+Wick filter: replace in 1140 hours<br/>
+Active carbon filter: replace in 1142 hours<br/>
+HEPA filter: replace in 1141 hours<br/>
+
+---
+
+# plain-coap
+## Status (Device: AC2729/50)
+Execution:
+- get_status()
+
+Output:
+
+{"ConnectType": "Localcontrol", "DeviceId": "00000000000000000000000000000000", "ProductId": "00000000000000000000000000000001", "Runtime": 227847866, "StatusType": "localcontrol", "WifiVersion": "AWS_Philips_AIR@54.2", "aqil": 75, "aqit": 4, "cl": false, "ddp": "0", "dt": 0, "dtrs": 0, "err": 0, "fltsts0": 213, "fltsts1": 4364, "fltsts2": 10487, "fltt1": "A3", "fltt2": "none", "iaql": 1, "mode": "A", "modelid": "http", "name": "Luftreiniger", "om": "1", "ota": "ck", "pm25": 1, "pwr": "1", "swversion": "1.0.7", "type": "http", "uil": "2", "wicksts": "5"}
+## Status (Device: AC2729/50)
+Execution:
+- airctrl --protocol plain_coap
+
+Output:
+
+[name]        Name: Luftreiniger<br/>
+[modelid]     ModelId: http<br/>
+[swversion]   Version: 1.0.7<br/>
+[StatusType]  StatusType: localcontrol<br/>
+[ota]         Over the air updates: ck<br/>
+[Runtime]     Runtime: 15.29 hours<br/>
+[pwr]         Power: ON<br/>
+[pm25]        PM25: 1<br/>
+[iaql]        Allergen index: 1<br/>
+[mode]        Mode: allergen<br/>
+[om]          Fan speed: 1<br/>
+[aqil]        Light brightness: 75<br/>
+[uil]         Buttons light: 2<br/>
+[ddp]         Used index: IAI<br/>
+[cl]          Child lock: False<br/>
+[fltsts0]     Pre-filter and Wick: clean in 213 hours<br/>
+[fltsts1]     HEPA filter: replace in 4364 hours<br/>
+[fltsts2]     Active carbon filter: replace in 10487 hours<br/>
+[wicksts]     Wick filter: replace in 5 hours<br/>
+
+## Firmware-information (Device: AC2729/50)
+Execution:
+- airctrl --protocol plain_coap --firmware
+
+Output:
+
+Software version: 1.0.7<br/>
+Over the air updates: ck<br/>
+
+## Filter-information (Device: AC2729/50)
+Execution:
+- airctrl --protocol plain_coap --filters
+
+Output:
+
+Pre-filter and Wick: clean in 213 hours<br/>
+HEPA filter: replace in 4364 hours<br/>
+Active carbon filter: replace in 10487 hours<br/>
+Wick filter: replace in 5 hours<br/>
+
+---
+
+# coap
+## Status (Device: AC2889/10)
+Execution:
+- get_status()
+
+Output:
+
+{"ConnectType":"Localcontrol","DeviceId":"00000000000000000000000000000000","ProductId":"00000000000000000000000000000001","Runtime":133558623,"StatusType":"localcontrol","WifiVersion":"AWS_Philips_AIR@54.2","aqil":25,"aqit":4,"cl":false,"ddp":"0","dt":0,"dtrs":0,"err":0,"fltsts0":149,"fltsts1":4300,"fltsts2":10423,"fltt1":"A3","fltt2":"none","iaql":1,"mode":"M","modelid":"AC2889/10","name":"Luftreiniger","om":"1","ota":"ck","pm25":1,"pwr":"1","swversion":"1.0.7","type":"AC2889","uil":"2"}
+## Status (Device: AC2889/10)
+Execution:
+- airctrl --protocol coap
+
+Output:
+
+[ConnectType]                 ConnectType: Localcontrol<br/>
+[DeviceId]                    DeviceId: 00000000000000000000000000000000<br/>
+[ProductId]                   ProductId: 00000000000000000000000000000001<br/>
+[Runtime]                     Runtime: 13.1 hours<br/>
+[StatusType]                  StatusType: localcontrol<br/>
+[WifiVersion]                 WifiVersion: AWS_Philips_AIR@54.2<br/>
+[aqil]                        Light brightness: 25<br/>
+[aqit]                        Air quality notification threshold: 4<br/>
+[cl]                          Child lock: False<br/>
+[ddp]                         Used index: IAI<br/>
+[fltsts0]                     Pre-filter and Wick: clean in 149 hours<br/>
+[fltsts1]                     HEPA filter: replace in 4300 hours<br/>
+[fltsts2]                     Active carbon filter: replace in 10423 hours<br/>
+[fltt1]                       HEPA filter type: NanoProtect Filter Series 3 (FY2422)<br/>
+[fltt2]                       Active carbon filter type: none<br/>
+[iaql]                        Allergen index: 1<br/>
+[mode]                        Mode: manual<br/>
+[modelid]                     ModelId: AC2889/10<br/>
+[name]                        Name: Luftreiniger<br/>
+[om]                          Fan speed: 1<br/>
+[ota]                         Over the air updates: ck<br/>
+[pm25]                        PM25: 1<br/>
+[pwr]                         Power: ON<br/>
+[swversion]                   Version: 1.0.7<br/>
+[type]                        Type: AC2889<br/>
+[uil]                         Buttons light: 2<br/>
+
+## Firmware-information (Device: AC2889/10)
+Execution:
+- airctrl --protocol coap --firmware
+
+Output:
+
+Version: 1.0.7<br/>
+Over the air updates: ck<br/>
+
+## Firmware-information (Device: AC2889/10)
+Execution:
+- airctrl --protocol coap --filters
+
+Output:
+
+Pre-filter and Wick: clean in 149 hours<br/>
+HEPA filter: replace in 4300 hours<br/>
+Active carbon filter: replace in 10423 hours<br/>
+
+## Status with err 193 - Clean Prefilter (Device: AC2889/10)
+Execution:
+- get_status()
+
+Output:
+
+{"name":"Luftreiniger","type":"AC2889","modelid":"AC2889/10","swversion":"1.0.7","om":"1","pwr":"1","cl":"false","aqil":25,"uil":"2","dt":0,"dtrs":0,"mode":"A","pm25":2,"iaql":1,"aqit":4,"ddp":"0","err":193,"fltt1":"A3","fltt2":"none","fltsts0":0,"fltsts1":4526,"fltsts2":10648,"ota":"ck","Runtime":100093460,"WifiVersion":"AWS_Philips_AIR@54.2","ProductId":"00000000000000000000000000000001","DeviceId":"00000000000000000000000000000000","StatusType":"localcontrol","ConnectType":"Localcontrol"}
+## Status with err 193 - Clean Prefilter (Device: AC2889/10)
+Execution:
+- airctrl --protocol coap
+
+Output:
+
+[name]                        Name: Luftreiniger<br/>
+[type]                        Type: AC2889<br/>
+[modelid]                     ModelId: AC2889/10<br/>
+[swversion]                   Version: 1.0.7<br/>
+[om]                          Fan speed: 1<br/>
+[pwr]                         Power: ON<br/>
+[cl]                          Child lock: false<br/>
+[aqil]                        Light brightness: 25<br/>
+[uil]                         Buttons light: 2<br/>
+[mode]                        Mode: allergen<br/>
+[pm25]                        PM25: 2<br/>
+[iaql]                        Allergen index: 1<br/>
+[aqit]                        Air quality notification threshold: 4<br/>
+[ddp]                         Used index: IAI<br/>
+[err]                         [ERROR] Message: 193<br/>
+[fltt1]                       HEPA filter type: NanoProtect Filter Series 3 (FY2422)<br/>
+[fltt2]                       Active carbon filter type: none<br/>
+[fltsts0]                     Pre-filter and Wick: clean in 0 hours<br/>
+[fltsts1]                     HEPA filter: replace in 4526 hours<br/>
+[fltsts2]                     Active carbon filter: replace in 10648 hours<br/>
+[ota]                         Over the air updates: ck<br/>
+[Runtime]                     Runtime: 3.8 hours<br/>
+[WifiVersion]                 WifiVersion: AWS_Philips_AIR@54.2<br/>
+[ProductId]                   ProductId: 00000000000000000000000000000001<br/>
+[DeviceId]                    DeviceId: 00000000000000000000000000000000<br/>
+[StatusType]                  StatusType: localcontrol<br/>
+[ConnectType]                 ConnectType: Localcontrol<br/>
+
+## Status of device with many values (Device: AC2729/50)
+Execution:
+- get_status()
+
+Output:
+
+{"name":"Bedroom","type":"AC2729","modelid":"AC2729/50","swversion":"0.2.1","om":"s","pwr":"1","cl":"false","aqil":100,"uil":"1","dt":0,"dtrs":0,"mode":"S","func":"P","rhset":50,"rh":29,"temp":24,"pm25":28,"iaql":5,"aqit":4,"ddp":"1","rddp":"1","err":49408,"wl":0,"fltt1":"A3","fltt2":"C7","fltsts0":236,"fltsts1":1256,"fltsts2":1256,"wicksts":1256,"ota":"ck","Runtime":50789,"WifiVersion":"AWS_Philips_AIR@56.4","ProductId":"00000000000000000000000000000001","DeviceId":"00000000000000000000000000000000","StatusType":"localcontrol","ConnectType":"Localcontrol"}
+## Status of another device with many values (Device: AC3858/50)
+Execution:
+- get_status()
+
+Output:
+
+{"ConnectType":"Localcontrol","DeviceId":"00000000000000000000000000000000","ProductId":"0000000000000000000000000000001","Runtime":611108689,"StatusType":"localcontrol","WifiVersion":"AWS_Philips_AIR@53","aqil":100,"aqit":10,"cl":false,"ddp":"1","err":0,"filid":"AC30360123456789012","filna":"AC3036","fltsts0":154,"fltsts1":4560,"fltsts2":65535,"fltt1":"A3","fltt2":"none","iaql":7,"language":"EN","mode":"AG","modelid":"AC3858/50","name":"LivingRoom","om":"0","ota":"no","pm25":40,"pwr":"0","rddp":"1","swversion":"Ms4102","tvoc":1,"type":"AC3858","uaset":"A","uil":"1"}
+## Status of another device with many values (Device: AC3858/50)
+Execution:
+- airctrl --protocol coap
+
+Output:
+
+[ConnectType]                 ConnectType: Localcontrol<br/>
+[DeviceId]                    DeviceId: 00000000000000000000000000000000<br/>
+[ProductId]                   ProductId: 0000000000000000000000000000001<br/>
+[Runtime]                     Runtime: 1.75 hours<br/>
+[StatusType]                  StatusType: localcontrol<br/>
+[WifiVersion]                 WifiVersion: AWS_Philips_AIR@53<br/>
+[aqil]                        Light brightness: 100<br/>
+[aqit]                        Air quality notification threshold: 10<br/>
+[cl]                          Child lock: False<br/>
+[ddp]                         Used index: PM2.5<br/>
+[filid]                       filid: AC30360123456789012<br/>
+[filna]                       filna: AC3036<br/>
+[fltsts0]                     Pre-filter and Wick: clean in 154 hours<br/>
+[fltsts1]                     HEPA filter: replace in 4560 hours<br/>
+[fltsts2]                     Active carbon filter: replace in 65535 hours<br/>
+[fltt1]                       HEPA filter type: NanoProtect Filter Series 3 (FY2422)<br/>
+[fltt2]                       Active carbon filter type: none<br/>
+[iaql]                        Allergen index: 7<br/>
+[language]                    language: EN<br/>
+[mode]                        Mode: AG<br/>
+[modelid]                     ModelId: AC3858/50<br/>
+[name]                        Name: LivingRoom<br/>
+[om]                          Fan speed: 0<br/>
+[ota]                         Over the air updates: no<br/>
+[pm25]                        PM25: 40<br/>
+[pwr]                         Power: OFF<br/>
+[rddp]                        rddp: 1<br/>
+[swversion]                   Version: Ms4102<br/>
+[tvoc]                        tvoc: 1<br/>
+[type]                        Type: AC3858<br/>
+[uaset]                       uaset: A<br/>
+[uil]                         Buttons light: ON<br/>
+
+---
+

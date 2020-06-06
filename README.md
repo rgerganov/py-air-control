@@ -96,6 +96,10 @@ The following command will try to retrieve the current status using the CoAP pro
 $ airctrl --ipaddr 192.168.0.17 --protocol plain_coap
 ```
 
+Output of different devices
+---
+- For further examples click [here](Examples.md)
+
 Usage via cloud services
 ---
 Use the `cloudctrl` script to control your device via the Philips cloud.
