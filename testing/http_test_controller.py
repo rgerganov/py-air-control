@@ -4,6 +4,7 @@ import base64
 import json
 import random
 import os
+import binascii
 import flask
 from Cryptodome.Cipher import AES
 from Cryptodome.Util.Padding import pad, unpad
@@ -75,7 +76,10 @@ class HttpTestController:
         session_key_encrypted = self._encrypt(self._device_key, s_bytes)
 
         data = json.dumps(
-            {"key": session_key_encrypted.hex(), "hellman": format(B, "x")}
+            {
+                "key": binascii.hexlify(session_key_encrypted).decode("utf8"),
+                "hellman": format(B, "x"),
+            }
         )
         data_enc = data.encode("ascii")
 

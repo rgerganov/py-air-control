@@ -106,7 +106,7 @@ class CoAPAirClient(HTTPAirClientBase):
         self._update_client_key()
         aes = self._handle_AES(self.client_key)
         paded_message = pad(bytes(payload.encode("utf8")), 16, style="pkcs7")
-        encoded_message = aes.encrypt(paded_message).hex().upper()
+        encoded_message = binascii.hexlify(aes.encrypt(paded_message)).decode("utf8").upper()
         digest = self._create_digest(self.client_key, encoded_message)
         return self.client_key + encoded_message + digest
 

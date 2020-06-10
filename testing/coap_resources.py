@@ -2,6 +2,7 @@
 import os
 import json
 import hashlib
+import binascii
 from Cryptodome.Cipher import AES
 from Cryptodome.Util.Padding import pad, unpad
 from coapthon.resources.resource import Resource
@@ -81,7 +82,7 @@ class StatusResource(EncryptedResourceBase):
     def _encrypt_payload(self, payload):
         aes = self._handle_AES(self.encryption_key)
         paded_message = pad(bytes(payload.encode("utf8")), 16, style="pkcs7")
-        encoded_message = aes.encrypt(paded_message).hex().upper()
+        encoded_message = binascii.hexlify(aes.encrypt(paded_message)).decode("utf8").upper()
         digest = self._create_digest(self.encryption_key, encoded_message)
         return self.encryption_key + encoded_message + digest
 
