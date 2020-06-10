@@ -6,8 +6,8 @@ python:
     - "3.8"
 install:
     - pip install -r requirements.txt
+    - pip install -r test-requirements.txt
     - pip install .
-    - pip install coveralls flask pytest
     - sudo iptables -t nat -I OUTPUT -p tcp -o lo --dport 80 -j REDIRECT --to-ports 5000
 script: 
     - airctrl -h && cloudctrl -h
