@@ -14,7 +14,7 @@ STATUS_TRANSFORMER = {
     "temp" : ("Temperature: {}", None),
     "func" : ("Function: {}", lambda func: {'P': 'Purification', 'PH': 'Purification & Humidification'}.get(func, func)),
     "mode" : ("Mode: {}", lambda mode: {'P': 'auto', 'A': 'allergen', 'S': 'sleep', 'M': 'manual', 'B': 'bacteria', 'N': 'night'}.get(mode, mode)),
-    "om" : ("Fan speed: {}", lambda om: {'s': 'silent', 't': 'turbo'}.get(om, om)),
+    "om" : ("Fan speed: {}", lambda om: {'s': 'silent', 't': 'turbo', 'a': 'auto'}.get(om, om)),
     "aqil" : ("Light brightness: {}", None),
     "aqit" : ("Air quality notification threshold: {}", None),
     "uil" : ("Buttons light: {}", lambda uil: {'1': 'ON', '0': 'OFF'}.get(uil, uil)),
