@@ -392,7 +392,7 @@ def main():
         default="http",
     )
     parser.add_argument("-d", "--debug", help="show debug output", action="store_true")
-    parser.add_argument("--om", help="set fan speed", choices=["1", "2", "3", "s", "t"])
+    parser.add_argument("--om", help="set fan speed", choices=["1", "2", "3", "s", "t", "a"])
     parser.add_argument("--pwr", help="power on/off", choices=["0", "1"])
     parser.add_argument(
         "--mode", help="set mode", choices=["P", "A", "S", "M", "B", "N"]
