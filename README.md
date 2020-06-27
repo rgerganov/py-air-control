@@ -96,6 +96,31 @@ The following command will try to retrieve the current status using the CoAP pro
 $ airctrl --ipaddr 192.168.0.17 --protocol plain_coap
 ```
 
+Running without root privileges
+---
+_Works since Linux kernel 2.6.39._
+
+Use id command to query your group ID:
+```
+$ id -g
+995
+```
+
+The following command set the range of group IDs that are allowed to create ICMP sockets (ping_group_range kernel parameter, the default is "1 0", which means no group is allowed to create ICMP Echo sockets):
+```
+$ sudo sysctl -w net.ipv4.ping_group_range="0 1000"
+net.ipv4.ping_group_range = 0 1000
+```
+
+Make it permanent:
+```
+$ sudo echo "net.ipv4.ping_group_range=0 1000" >> /etc/sysctl.conf
+$ sudo sysctl -p
+net.ipv4.ping_group_range = 0 1000
+``` 
+(see also: https://man7.org/linux/man-pages/man7/icmp.7.html)
+
+
 Output of different devices
 ---
 - For further examples click [here](Examples.md)
