@@ -96,7 +96,7 @@ The following command will try to retrieve the current status using the CoAP pro
 $ airctrl --ipaddr 192.168.0.17 --protocol plain_coap
 ```
 
-Running without root privileges
+Running without root privileges (Plain CoAP protocol only)
 ---
 _Works since Linux kernel 2.6.39._
 
@@ -114,7 +114,7 @@ net.ipv4.ping_group_range = 0 1000
 
 Make it permanent:
 ```
-$ sudo echo "net.ipv4.ping_group_range=0 1000" >> /etc/sysctl.conf
+$ echo "net.ipv4.ping_group_range=0 1000" | sudo tee -a /etc/sysctl.conf
 $ sudo sysctl -p
 net.ipv4.ping_group_range = 0 1000
 ``` 
