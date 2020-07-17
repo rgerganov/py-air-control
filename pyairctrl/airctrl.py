@@ -408,7 +408,7 @@ def main():
     )
     parser.add_argument("--uil", help="set button lights on/off", choices=["0", "1"])
     parser.add_argument(
-        "--ddp", help="set indicator pm2.5/IAI/Gas/Humidity", choices=["0", "1", "2", "3"]
+        "--ddp", help="set indicator IAI/PM2.5/Gas/Humidity", choices=["0", "1", "2", "3"]
     )
     parser.add_argument(
         "--dt",
