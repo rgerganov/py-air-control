@@ -11,6 +11,7 @@ STATUS_TRANSFORMER = {
     "rh" : ("Humidity: {}", None),
     "rhset" : ("Target humidity: {}", None),
     "iaql" : ("Allergen index: {}", None),
+    "tvoc" : ("Total volatile organic compounds: {}", None),
     "temp" : ("Temperature: {}", None),
     "func" : ("Function: {}", lambda func: {'P': 'Purification', 'PH': 'Purification & Humidification'}.get(func, func)),
     "mode" : ("Mode: {}", lambda mode: {'P': 'auto', 'A': 'allergen', 'S': 'sleep', 'M': 'manual', 'B': 'bacteria', 'N': 'night'}.get(mode, mode)),
