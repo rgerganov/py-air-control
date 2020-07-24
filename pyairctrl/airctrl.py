@@ -96,8 +96,8 @@ class HTTPAirCli:
             pprint.pprint(response)
         return response
 
-    def __init__(self, host):
-        self._client = HTTPAirClient(host)
+    def __init__(self, host, debug=True):
+        self._client = HTTPAirClient(host, debug)
 
     def set_values(self, values, debug=False):
         try:
@@ -156,7 +156,7 @@ class HTTPAirCli:
                 "M": "manual",
                 "B": "bacteria",
                 "N": "night",
-                "T": "turbo",                
+                "T": "turbo",
             }
             mode = mode_str.get(mode, mode)
             print("[mode]  Mode: {}".format(mode))
@@ -288,7 +288,7 @@ class PlainCoAPAirCli:
                 "M": "manual",
                 "B": "bacteria",
                 "N": "night",
-                "T": "turbo",               
+                "T": "turbo",
             }
             mode = mode_str.get(mode, mode)
             print("[mode]        Mode: {}".format(mode))

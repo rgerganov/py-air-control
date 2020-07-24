@@ -101,13 +101,15 @@ class HTTPAirClient:
 
         return resp
 
-    def __init__(self, host):
+    def __init__(self, host, debug=False):
         self._host = host
         self._session_key = None
+        self._debug = debug
         self.load_key()
 
     def _get_key(self):
-        print("Exchanging secret key with the device ...")
+        if self._debug:
+            print("Exchanging secret key with the device ...")
         url = "http://{}/di/v1/products/0/security".format(self._host)
         a = random.getrandbits(256)
         A = pow(G, a, P)
@@ -133,7 +135,9 @@ class HTTPAirClient:
             config["keys"] = {}
         hex_key = binascii.hexlify(self._session_key).decode("ascii")
         config["keys"][self._host] = hex_key
-        print("Saving session_key {} to {}".format(hex_key, fpath))
+
+        if self._debug:
+            print("Saving session_key {} to {}".format(hex_key, fpath))
         with open(fpath, "w") as f:
             config.write(f)
 
@@ -192,8 +196,9 @@ class HTTPAirClient:
         try:
             return self._get_once(url)
         except Exception as e:
-            print("GET error: {}".format(str(e)))
-            print("Will retry after getting a new key ...")
+            if self._debug:
+                print("GET error: {}".format(str(e)))
+                print("Will retry after getting a new key ...")
             self._get_key()
             return self._get_once(url)
 
