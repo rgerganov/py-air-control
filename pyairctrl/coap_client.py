@@ -88,7 +88,12 @@ class CoAPAirClient(HTTPAirClientBase):
 
     def _sync(self):
         self.syncrequest = binascii.hexlify(os.urandom(4)).decode("utf8").upper()
-        self.client_key = self.client.post("/sys/dev/sync", self.syncrequest).payload
+        resp = self.client.post("/sys/dev/sync", self.syncrequest, timeout=5)
+        if resp:
+            self.client_key = resp.payload
+        else:
+            self.client.stop()
+            raise Exception("sync timeout")
 
     def _decrypt_payload(self, encrypted_payload):
         encoded_counter = encrypted_payload[0:8]
