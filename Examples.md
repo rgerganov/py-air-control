@@ -304,5 +304,77 @@ Output:
 [uaset]                       uaset: A<br/>
 [uil]                         Buttons light: ON<br/>
 
+## Status (Device: AC1214/10)
+
+Execution:
+- airctrl --protocol coap
+
+Output:
+[name]                        Name: 3dp
+[type]                        Type: AC1214
+[modelid]                     ModelId: AC1214/10
+[swversion]                   Version: 2.0.0
+[om]                          Fan speed: turbo
+[pwr]                         Power: ON
+[cl]                          Child lock: False
+[aqil]                        Light brightness: 25
+[uil]                         Buttons light: ON
+[mode]                        Mode: manual
+[pm25]                        PM25: 8
+[iaql]                        Allergen index: 2
+[aqit]                        Air quality notification threshold: 4
+[ddp]                         Used index: IAI
+[fltt1]                       HEPA filter type: NanoProtect Filter Series 3 (FY2422)
+[fltt2]                       Active carbon filter type: NanoProtect Filter AC (FY2420)
+[fltsts0]                     Pre-filter and Wick: clean in 324 hours
+[fltsts1]                     HEPA filter: replace in 4764 hours
+[fltsts2]                     Active carbon filter: replace in 2364 hours
+[ota]                         Over the air updates: ck
+[Runtime]                     Runtime: 18.85 hours
+[WifiVersion]                 WifiVersion: AWS_Philips_AIR@54.2
+[ProductId]                   ProductId: dca8c9d2f2ab11e8a1e3061302926720
+[DeviceId]                    DeviceId: 7eb0ceec088e11eb822512cc9b0818ae
+[StatusType]                  StatusType: localcontrol
+[ConnectType]                 ConnectType: Localcontrol
+
+## Status (Device: AC4236/10)
+
+Execution:
+- airctrl --protocol coap
+
+[name]                        Name: Living Room
+[type]                        Type: AC4236
+[modelid]                     ModelId: AC4236/10
+[swversion]                   Version: Ms4102
+[language]                    language: EN
+[DeviceVersion]               DeviceVersion: 1.0.2
+[om]                          Fan speed: silent
+[pwr]                         Power: ON
+[cl]                          Child lock: False
+[aqil]                        Light brightness: 0
+[uil]                         Buttons light: OFF
+[uaset]                       uaset: A
+[mode]                        Mode: sleep
+[pm25]                        PM25: 11
+[iaql]                        Allergen index: 3
+[aqit]                        Air quality notification threshold: 4
+[tvoc]                        Total volatile organic compounds: 1
+[ddp]                         Used index: IAI
+[rddp]                        rddp: 0
+[fltt1]                       HEPA filter type: NanoProtect Filter Series 3 (FY2422)
+[fltt2]                       Active carbon filter type: none
+[fltsts0]                     Pre-filter and Wick: clean in 237 hours
+[fltsts1]                     HEPA filter: replace in 3936 hours
+[fltsts2]                     Active carbon filter: replace in 65535 hours
+[filna]                       filna: AC3036
+[filid]                       filid: AC30360123456789012
+[ota]                         Over the air updates: ck
+[Runtime]                     Runtime: 0.81 hours
+[WifiVersion]                 WifiVersion: AWS_Philips_AIR@54.2
+[ProductId]                   ProductId: ee694f0e13b511e9bc6802024953075e
+[DeviceId]                    DeviceId: e4e3cd14556911ea9c02c6c73fbf6c00
+[StatusType]                  StatusType: localcontrol
+[ConnectType]                 ConnectType: Localcontrol
+
 ---
 
