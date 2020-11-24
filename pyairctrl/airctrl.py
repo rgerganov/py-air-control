@@ -397,7 +397,7 @@ def main():
     parser.add_argument("--om", help="set fan speed", choices=["1", "2", "3", "s", "t", "a"])
     parser.add_argument("--pwr", help="power on/off", choices=["0", "1"])
     parser.add_argument(
-        "--mode", help="set mode", choices=["P", "A", "S", "M", "B", "N", "T"]
+        "--mode", help="set mode", choices=["P", "A", "AG", "F", "S", "M", "B", "N", "T"]
     )
     parser.add_argument(
         "--rhset", help="set target humidity", choices=["40", "50", "60", "70"]
