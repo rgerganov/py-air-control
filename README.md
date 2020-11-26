@@ -8,7 +8,7 @@ There is an experimental support for newer models (after end of 2019) which comm
 
 Installation
 ---
-Python 3.4+ is required. Install with `pip3`:
+Python 3.4-3.8 is required (3.9+ not currently supported). Install with `pip3`:
 ```
 $ pip3 install py-air-control
 ```
