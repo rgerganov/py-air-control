@@ -68,7 +68,9 @@ class HTTPAirClient:
         urls = {}
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) as s:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+            if hasattr(socket, "SO_REUSEPORT"):
+                # SO_REUSEPORT is not supported on some systems
+                s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
             s.setsockopt(socket.SOL_IP, socket.IP_MULTICAST_TTL, 20)
             s.settimeout(timeout)
             for i in range(repeats):
