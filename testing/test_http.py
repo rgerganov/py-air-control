@@ -112,13 +112,6 @@ class TestHTTP:
     def test_get_cli_filters_is_valid(self, air_cli, test_data, capfd):
         self.assert_cli_data(air_cli.get_filters, "fltsts-cli", test_data, capfd)
 
-    def test_set_values_cli_is_valid(self, air_cli, test_data, capfd):
-        values = {}
-        values["mode"] = "A"
-        air_cli.set_values(values)
-        result, err = capfd.readouterr()
-        assert result == test_data["http"]["status-cli"]["data"]
-
     def assert_json_data(self, air_func, dataset, test_data):
         result = air_func()
         data = test_data["http"][dataset]["data"]
