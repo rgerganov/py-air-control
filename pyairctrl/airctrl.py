@@ -394,10 +394,14 @@ def main():
         default="http",
     )
     parser.add_argument("-d", "--debug", help="show debug output", action="store_true")
-    parser.add_argument("--om", help="set fan speed", choices=["1", "2", "3", "s", "t", "a"])
+    parser.add_argument(
+        "--om", help="set fan speed", choices=["1", "2", "3", "s", "t", "a"]
+    )
     parser.add_argument("--pwr", help="power on/off", choices=["0", "1"])
     parser.add_argument(
-        "--mode", help="set mode", choices=["P", "A", "AG", "F", "S", "M", "B", "N", "T"]
+        "--mode",
+        help="set mode",
+        choices=["P", "A", "AG", "F", "S", "M", "B", "N", "T"],
     )
     parser.add_argument(
         "--rhset", help="set target humidity", choices=["40", "50", "60", "70"]
@@ -408,7 +412,9 @@ def main():
     )
     parser.add_argument("--uil", help="set button lights on/off", choices=["0", "1"])
     parser.add_argument(
-        "--ddp", help="set indicator IAI/PM2.5/Gas/Humidity", choices=["0", "1", "2", "3"]
+        "--ddp",
+        help="set indicator IAI/PM2.5/Gas/Humidity",
+        choices=["0", "1", "2", "3"],
     )
     parser.add_argument(
         "--dt",
