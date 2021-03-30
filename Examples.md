@@ -299,7 +299,7 @@ Output:
 [pwr]                         Power: OFF<br/>
 [rddp]                        rddp: 1<br/>
 [swversion]                   Version: Ms4102<br/>
-[tvoc]                        tvoc: 1<br/>
+[tvoc]                        Total volatile organic compounds: 1<br/>
 [type]                        Type: AC3858<br/>
 [uaset]                       uaset: A<br/>
 [uil]                         Buttons light: ON<br/>
