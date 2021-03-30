@@ -30,5 +30,5 @@ STATUS_TRANSFORMER = {
     "fltsts1" : ("HEPA filter: replace in {} hours", "filter", None),
     "fltsts2" : ("Active carbon filter: replace in {} hours", "filter", None),
     "wicksts" : ("Wick filter: replace in {} hours", "filter", None),
-    "err" : ("[ERROR] Message: {}", None, lambda err: None if err == 0 else {49408: 'no water', 32768: 'water tank open', 49155: 'pre-filter must be cleaned'}.get(err, err)),
+    "err" : ("[ERROR] Message: {}", None, lambda err: None if err == 0 else {193: 'F0 (pre-filter) must be cleaned', 49408: 'no water', 32768: 'water tank open', 49155: 'pre-filter must be cleaned'}.get(err, err)),
 }
