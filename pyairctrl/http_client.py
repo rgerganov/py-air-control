@@ -204,7 +204,7 @@ class HTTPAirClient:
             self._get_key()
             return self._get_once(url)
 
-    def get_status(self):
+    def get_status(self, debug=False):
         url = "http://{}/di/v1/products/1/air".format(self._host)
         status = self._get(url)
         return status

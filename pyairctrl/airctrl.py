@@ -14,16 +14,17 @@ class CliBase:
     def __init__(self, client):
         self._client = client
 
-    def _dump_keys(self, status, subset):
+    def _dump_keys(self, status, subset, printKey):
         for key in status:
             current_value = status[key]
             name_and_value = self._get_info_for_key(key, current_value, subset)
             if name_and_value is None:
                 continue
 
+            prefix = "[{key}]\t".format(key=key) if printKey else ""
             print(
-                "[{key}]\t{name_and_value}".format(
-                    key=key, name_and_value=name_and_value
+                "{prefix}{name_and_value}".format(
+                    prefix=prefix, name_and_value=name_and_value
                 ).expandtabs(30)
             )
 
@@ -36,7 +37,7 @@ class CliBase:
         if debug:
             print("Raw status:")
             pprint.pprint(status)
-        self._dump_keys(status, None)
+        self._dump_keys(status, None, True)
 
     def set_values(self, values, debug=False):
         try:
@@ -67,7 +68,7 @@ class CliBase:
             print("No filter-info found")
             return
 
-        self._dump_keys(status, "filter")
+        self._dump_keys(status, "filter", False)
 
     def get_firmware(self):
         status = self._client.get_firmware()
@@ -75,7 +76,7 @@ class CliBase:
             print("No firmware-info found")
             return
 
-        self._dump_keys(status, "firmware")
+        self._dump_keys(status, "firmware", False)
 
 
 class CoAPCliBase(CliBase):
