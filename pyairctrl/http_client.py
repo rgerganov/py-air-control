@@ -193,17 +193,17 @@ class HTTPAirClient:
         with urllib.request.urlopen(url) as response:
             resp = response.read()
             resp = decrypt(resp.decode("ascii"), self._session_key)
-            return json.loads(resp)
+            return json.loads(resp, object_pairs_hook=OrderedDict)
 
     def _get(self, url):
         try:
-            return json.loads(self._get_once(url), object_pairs_hook=OrderedDict)
+            return self._get_once(url)
         except Exception as e:
             if self._debug:
                 print("GET error: {}".format(str(e)))
                 print("Will retry after getting a new key ...")
             self._get_key()
-            return json.loads(self._get_once(url), object_pairs_hook=OrderedDict)
+            return self._get_once(url)
 
     def get_status(self, debug=False):
         url = "http://{}/di/v1/products/1/air".format(self._host)

@@ -33,7 +33,7 @@
             "execute": [
                 "airctrl --protocol http --wifi"
             ],
-            "data": "{'cppid': '0000000000000000',\n 'dhcp': True,\n 'gateway': '127.0.0.1',\n 'ipaddress': '127.0.0.2',\n 'macaddress': '00:00:00:00:00:00',\n 'netmask': '255.255.255.0',\n 'password': 'xxx',\n 'protection': 'wpa-2',\n 'ssid': 'My SSID'}\n"
+            "data": "cppid: 0000000000000000\ndhcp: True\ngateway: 127.0.0.1\nipaddress: 127.0.0.2\nmacaddress: 00:00:00:00:00:00\nnetmask: 255.255.255.0\npassword: xxx\nprotection: wpa-2\nssid: My SSID\n"
         },
         "firmware": {
             "device": "AC2729/10",
@@ -49,7 +49,7 @@
             "execute": [
                 "airctrl --protocol http --firmware"
             ],
-            "data": "{'mandatory': False,\n 'name': 'AC2729_10',\n 'progress': 0,\n 'state': 'idle',\n 'statusmsg': '',\n 'upgrade': '',\n 'version': '8'}\n"
+            "data": "mandatory: False\nName: AC2729_10\nprogress: 0\nstate: idle\nstatusmsg: \nupgrade: \nversion: 8\n"
         },
         "fltsts": {
             "device": "AC2729/10",

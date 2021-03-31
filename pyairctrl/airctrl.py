@@ -128,11 +128,11 @@ class HTTPAirCli(CliBase):
 
     def get_wifi(self):
         wifi = self._client.get_wifi()
-        pprint.pprint(wifi)
+        self._dump_keys(wifi, None, False)
 
     def get_firmware(self):
         firmware = self._client.get_firmware()
-        pprint.pprint(firmware)
+        self._dump_keys(firmware, None, False)
 
 
 def main():
