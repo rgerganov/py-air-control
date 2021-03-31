@@ -197,7 +197,7 @@ class HTTPAirClient:
 
     def _get(self, url):
         try:
-            return self._get_once(url)
+            return json.loads(self._get_once(url), object_pairs_hook=OrderedDict)
         except Exception as e:
             if self._debug:
                 print("GET error: {}".format(str(e)))
