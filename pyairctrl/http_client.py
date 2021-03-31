@@ -12,6 +12,7 @@ import socket
 import urllib.request
 import xml.etree.ElementTree as ET
 
+from collections import OrderedDict
 from Cryptodome.Cipher import AES
 from Cryptodome.Util.Padding import pad, unpad
 
@@ -202,7 +203,7 @@ class HTTPAirClient:
                 print("GET error: {}".format(str(e)))
                 print("Will retry after getting a new key ...")
             self._get_key()
-            return self._get_once(url)
+            return json.loads(self._get_once(url), object_pairs_hook=OrderedDict)
 
     def get_status(self, debug=False):
         url = "http://{}/di/v1/products/1/air".format(self._host)
