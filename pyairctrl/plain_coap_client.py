@@ -10,6 +10,7 @@ import struct
 import sys
 import time
 
+from collections import OrderedDict
 from coapthon import defines
 from coapthon.client.helperclient import HelperClient
 from coapthon.messages.request import Request
@@ -58,7 +59,7 @@ class PlainCoAPAirClient:
             client.stop()
 
         if response:
-            return json.loads(response.payload)["state"]["reported"]
+            return json.loads(response.payload, object_pairs_hook=OrderedDict)["state"]["reported"]
         else:
             return {}
 
