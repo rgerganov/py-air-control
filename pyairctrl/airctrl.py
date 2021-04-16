@@ -152,7 +152,7 @@ def main():
     parser.add_argument(
         "--mode",
         help="set mode",
-        choices=["P", "A", "AG", "F", "S", "M", "B", "N", "T"],
+        choices=["P", "A", "AG", "F", "S", "M", "B", "N", "T", "GT"],
     )
     parser.add_argument(
         "--rhset", help="set target humidity", choices=["40", "50", "60", "70"]

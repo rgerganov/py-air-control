@@ -14,7 +14,7 @@ STATUS_TRANSFORMER = {
     "tvoc" : ("Total volatile organic compounds: {}", None, None),
     "temp" : ("Temperature: {}", None, None),
     "func" : ("Function: {}", None, lambda func: {'P': 'Purification', 'PH': 'Purification & Humidification'}.get(func, func)),
-    "mode" : ("Mode: {}", None, lambda mode: {'P': 'auto', 'A': 'allergen', 'S': 'sleep', 'M': 'manual', 'B': 'bacteria', 'N': 'night', 'T': 'turbo'}.get(mode, mode)),
+    "mode" : ("Mode: {}", None, lambda mode: {'P': 'auto', 'A': 'allergen', 'S': 'sleep', 'M': 'manual', 'B': 'bacteria', 'N': 'night', 'T': 'turbo', 'GT': 'gentle'}.get(mode, mode)),
     "om" : ("Fan speed: {}", None, lambda om: {'s': 'silent', 't': 'turbo', 'a': 'auto'}.get(om, om)),
     "aqil" : ("Light brightness: {}", None, None),
     "aqit" : ("Air quality notification threshold: {}", None, None),
