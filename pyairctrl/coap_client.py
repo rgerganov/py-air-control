@@ -77,11 +77,14 @@ class CoAPAirClient(HTTPAirClientBase):
     def __init__(self, host, port=5683, debug=False):
         super().__init__(host, port, debug)
         self.client = self._create_coap_client(self.server, self.port)
+        self.response = None
         self._sync()
 
     def __del__(self):
         # TODO call a close method explicitly instead
-        self.client.stop()
+        if self.response:
+            self.client.cancel_observing(self.response, True)        
+        self.client.stop()        
 
     def _create_coap_client(self, host, port):
         return HelperClient(server=(host, port))
@@ -139,20 +142,16 @@ class CoAPAirClient(HTTPAirClientBase):
         path = "/sys/dev/status"
         decrypted_payload = None
 
-        response = None
         try:
             request = self.client.mk_request(defines.Codes.GET, path)
             request.observe = 0
-            response = self.client.send_request(request, None, 2)
-            encrypted_payload = response.payload
+            self.response = self.client.send_request(request, None, 2)
+            encrypted_payload = self.response.payload
             decrypted_payload = self._decrypt_payload(encrypted_payload)
         except WrongDigestException:
             print("Message from device got corrupted")
         except Exception as e:
             print("Unexpected error:{}".format(e))
-        finally:
-            if response:
-                self.client.cancel_observing(response, True)
 
         if decrypted_payload is not None:
             return json.loads(decrypted_payload, object_pairs_hook=OrderedDict)[
