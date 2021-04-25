@@ -139,6 +139,7 @@ class CoAPAirClient(HTTPAirClientBase):
         path = "/sys/dev/status"
         decrypted_payload = None
 
+        response = None
         try:
             request = self.client.mk_request(defines.Codes.GET, path)
             request.observe = 0
@@ -149,6 +150,9 @@ class CoAPAirClient(HTTPAirClientBase):
             print("Message from device got corrupted")
         except Exception as e:
             print("Unexpected error:{}".format(e))
+        finally:
+            if response:
+                self.client.cancel_observing(response, True)
 
         if decrypted_payload is not None:
             return json.loads(decrypted_payload, object_pairs_hook=OrderedDict)[

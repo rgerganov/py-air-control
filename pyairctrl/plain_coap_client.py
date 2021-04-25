@@ -46,6 +46,7 @@ class PlainCoAPAirClient:
 
     def _get(self):
         path = "/sys/dev/status"
+        response = None
         try:
             client = self._create_coap_client(self.server, self.port)
             self._send_hello_sequence(client)
@@ -56,6 +57,8 @@ class PlainCoAPAirClient:
             request.observe = 0
             response = client.send_request(request, None, 2)
         finally:
+            if response:
+                client.cancel_observing(response, True)
             client.stop()
 
         if response:
