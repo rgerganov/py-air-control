@@ -2,9 +2,7 @@
 [![PyPI version](https://badge.fury.io/py/py-air-control.svg)](https://badge.fury.io/py/py-air-control)
 
 Command line application for controlling Philips air purifiers.
-
-It is tested with several models (AC2729, AC2889, AC1214) which communicate over HTTP.
-There is an experimental support for newer models (after end of 2019) which communicate over the CoAP protocol.
+Supports devices communicating over HTTP, CoAP and encrypted CoAP.
 
 Installation
 ---
