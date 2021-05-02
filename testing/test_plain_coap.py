@@ -50,10 +50,10 @@ class TestPlainCoap:
         server.stop()
 
     def test_set_values(self, air_client, monkeypatch):
-        def send_hello_sequence(client):
+        def initConnection(client):
             return
 
-        monkeypatch.setattr(air_client, "_send_hello_sequence", send_hello_sequence)
+        monkeypatch.setattr(air_client, "_initConnection", initConnection)
 
         values = {}
         values["mode"] = "A"
@@ -96,10 +96,10 @@ class TestPlainCoap:
         )
 
     def assert_json_data(self, air_func, dataset, test_data, monkeypatch, air_client):
-        def send_hello_sequence(client):
+        def initConnection(client):
             return
 
-        monkeypatch.setattr(air_client, "_send_hello_sequence", send_hello_sequence)
+        monkeypatch.setattr(air_client, "_initConnection", initConnection)
 
         result = air_func()
         data = test_data["plain-coap"][dataset]["data"]
@@ -109,11 +109,11 @@ class TestPlainCoap:
     def assert_cli_data(
         self, air_func, dataset, test_data, monkeypatch, air_cli, capfd
     ):
-        def send_hello_sequence(client):
+        def initConnection(client):
             return
 
         monkeypatch.setattr(
-            air_cli._client, "_send_hello_sequence", send_hello_sequence
+            air_cli._client, "_initConnection", initConnection
         )
 
         air_func()

@@ -11,25 +11,41 @@ import sys
 import time
 
 from collections import OrderedDict
-from coapthon import defines
-from coapthon.client.helperclient import HelperClient
-from coapthon.messages.request import Request
-from coapthon.utils import generate_random_token
+from .coap_client import CoAPAirClientBase
 
+class PlainCoAPAirClient(CoAPAirClientBase):
+    def __init__(self, host, port=5683, debug=False):
+        super().__init__(host, port, debug)
+        # TODO is this really needed for _get?
+        #request.type = defines.Types["ACK"]
+        #request.token = generate_random_token(4)
 
-class NotSupportedException(Exception):
-    pass
+    def _set(self, key, value):
+        payload = {"state": {"desired": {key: value}}}
+        return super()._set(key, payload)
 
+    def _transform_payload_after_receiving(self, payload):
+        return payload
 
-class PlainCoAPAirClient:
-    def __init__(self, host, port=5683):
-        self.coapthon_logger = logging.getLogger("coapthon")
-        self.coapthon_logger.setLevel("WARN")
-        self.server = host
-        self.port = port
+    def _transform_payload_before_sending(self, payload):
+        return payload
 
-    def _create_coap_client(self, host, port):
-        return HelperClient(server=(host, port))
+    def _initConnection(self):
+        try:
+            ownIp = self._get_ip()
+
+            header = self._create_icmp_header()
+            data = self._create_icmp_data(ownIp, self.port, self.server, self.port)
+            packet = header + data
+            packet = self._create_icmp_header(self._checksum_icmp(packet)) + data
+
+            self._send_over_socket(self.server, packet)
+
+            # that is needed to give device time to open coap port, otherwise it may not respond properly
+            time.sleep(0.5)
+            self._send_empty_message()
+        finally:
+            pass
 
     def _send_over_socket(self, destination, packet):
         protocol = socket.getprotobyname("icmp")
@@ -43,57 +59,6 @@ class PlainCoAPAirClient:
             pass
         finally:
             s.close()
-
-    def _get(self):
-        path = "/sys/dev/status"
-        response = None
-        try:
-            client = self._create_coap_client(self.server, self.port)
-            self._send_hello_sequence(client)
-            request = client.mk_request(defines.Codes.GET, path)
-            request.destination = server = (self.server, self.port)
-            request.type = defines.Types["ACK"]
-            request.token = generate_random_token(4)
-            request.observe = 0
-            response = client.send_request(request, None, 2)
-        finally:
-            if response:
-                client.cancel_observing(response, True)
-            client.stop()
-
-        if response:
-            return json.loads(response.payload, object_pairs_hook=OrderedDict)["state"]["reported"]
-        else:
-            return {}
-
-    def _set(self, key, value):
-        path = "/sys/dev/control"
-        try:
-            client = self._create_coap_client(self.server, self.port)
-            self._send_hello_sequence(client)
-            payload = {"state": {"desired": {key: value}}}
-            response = client.post(path, json.dumps(payload))
-            return response.payload == '{"status":"success"}'
-        finally:
-            client.stop()
-
-    def _send_hello_sequence(self, client):
-        ownIp = self._get_ip()
-
-        header = self._create_icmp_header()
-        data = self._create_icmp_data(ownIp, self.port, self.server, self.port)
-        packet = header + data
-        packet = self._create_icmp_header(self._checksum_icmp(packet)) + data
-
-        self._send_over_socket(self.server, packet)
-
-        # that is needed to give device time to open coap port, otherwise it may not respond properly
-        time.sleep(0.5)
-
-        request = Request()
-        request.destination = server = (self.server, self.port)
-        request.code = defines.Codes.EMPTY.number
-        client.send_empty(request)
 
     def _get_ip(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -212,34 +177,3 @@ class PlainCoAPAirClient:
         return self._create_tcp_data(srcIp, dstIp) + self._create_udp_data(
             srcPort, dstPort
         )
-
-    def set_values(self, values, debug=False):
-        if debug:
-            self.coapthon_logger.setLevel("DEBUG")
-        result = True
-        for key in values:
-            result = result and self._set(key, values[key])
-
-        return result
-
-    def get_status(self, debug=False):
-        if debug:
-            self.coapthon_logger.setLevel("DEBUG")
-        status = self._get()
-        return status
-
-    def get_wifi(self):
-        raise NotSupportedException
-
-    def set_wifi(self, ssid, pwd):
-        raise NotSupportedException
-
-    def get_firmware(self):
-        status = self._get()
-        # TODO Really transmit full status here?
-        return status
-
-    def get_filters(self):
-        status = self._get()
-        # TODO Really transmit full status here?
-        return status
