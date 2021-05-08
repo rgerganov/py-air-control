@@ -13,12 +13,13 @@ import time
 from collections import OrderedDict
 from .coap_client import CoAPAirClientBase
 
+
 class PlainCoAPAirClient(CoAPAirClientBase):
     def __init__(self, host, port=5683, debug=False):
         super().__init__(host, port, debug)
         # TODO is this really needed for _get?
-        #request.type = defines.Types["ACK"]
-        #request.token = generate_random_token(4)
+        # request.type = defines.Types["ACK"]
+        # request.token = generate_random_token(4)
 
     def _set(self, key, value):
         payload = {"state": {"desired": {key: value}}}
@@ -153,7 +154,7 @@ class PlainCoAPAirClient(CoAPAirClientBase):
         tcp = struct.pack(
             "!BBHHHBBH4s4s",
             ip_ver,  # IP Version
-            ip_dfc,  # Differentiate Service Feild
+            ip_dfc,  # Differentiate Service Field
             ip_tol,  # Total Length
             ip_idf,  # Identification
             ip_flg,  # Flags
