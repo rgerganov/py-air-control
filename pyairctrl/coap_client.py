@@ -10,9 +10,14 @@ import os
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 
-from coapthon import defines
-from coapthon.client.helperclient import HelperClient
-from coapthon.messages.request import Request
+from pyairctrl import aiocoap_monkeypatch
+from aiocoap import (
+    Context,
+    GET,
+    Message,
+    NON,
+    POST,
+)
 from Cryptodome.Cipher import AES
 from Cryptodome.Util.Padding import pad, unpad
 
@@ -36,22 +41,26 @@ class CoAPAirClientBase(ABC):
         self.server = host
         self.port = port
         self.debug = debug
-        self.client = self._create_coap_client(self.server, self.port)
-        self.response = None
-        self._initConnection()
+        self.client = None
 
-    def __del__(self):
-        if self.response:
-            self.client.cancel_observing(self.response, True)
-        self.client.stop()
+    @classmethod
+    async def create(cls, *args, **kwargs):
+        obj = cls(*args, **kwargs)
+        await obj._init()
+        return obj
 
-    def _create_coap_client(self, host, port):
-        return HelperClient(server=(host, port))
+    async def _init(self):
+        self.client = await Context.create_client_context()
+        await self._initConnection()
 
-    def get_status(self, debug=False):
+    async def shutdown(self) -> None:
+        if self.client:
+            await self.client.shutdown()
+
+    async def get_status(self, debug=False):
         if debug:
             self.logger.setLevel("DEBUG")
-        status = self._get()
+        status = await self._get()
         return status
 
     def set_values(self, values, debug=False):
@@ -64,15 +73,21 @@ class CoAPAirClientBase(ABC):
 
         return result
 
-    def _get(self):
+    async def _get(self):
         payload = None
 
         try:
-            request = self.client.mk_request(defines.Codes.GET, self.STATUS_PATH)
-            request.observe = 0
-            self.response = self.client.send_request(request, None, 2)
-            if self.response:
-                payload = self._transform_payload_after_receiving(self.response.payload)
+            request = Message(
+                code=GET,
+                mtype=NON,
+                uri=f"coap://{self.server}:{self.port}{self.STATUS_PATH}",
+            )
+            request.opt.observe = 0
+            response = await self.client.request(request).response
+            if response:
+                payload = self._transform_payload_after_receiving(
+                    response.payload.decode()
+                )
         except Exception as e:
             print("Unexpected error:{}".format(e))
 
@@ -104,7 +119,7 @@ class CoAPAirClientBase(ABC):
         self.client.send_empty(request)
 
     @abstractmethod
-    def _initConnection(self):
+    async def _initConnection(self):
         pass
 
     @abstractmethod
@@ -138,9 +153,15 @@ class CoAPAirClient(CoAPAirClientBase):
     def __init__(self, host, port=5683, debug=False):
         super().__init__(host, port, debug)
 
-    def _initConnection(self):
-        self.syncrequest = binascii.hexlify(os.urandom(4)).decode("utf8").upper()
-        resp = self.client.post(self.SYNC_PATH, self.syncrequest, timeout=5)
+    async def _initConnection(self):
+        syncrequest = os.urandom(4).hex().upper()
+        request = Message(
+            code=POST,
+            mtype=NON,
+            uri=f"coap://{self.server}:{self.port}{self.SYNC_PATH}",
+            payload=syncrequest.encode(),
+        )
+        resp = await self.client.request(request).response
         if resp:
             self.client_key = resp.payload
         else:

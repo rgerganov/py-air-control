@@ -19,7 +19,7 @@ setuptools.setup(
     packages=['pyairctrl'],
     install_requires=[
         'pycryptodomex>=3.4.7',
-        'CoAPthon3>=1.0.1'
+        'aiocoap==0.4.1'
         ],
     entry_points={
         'console_scripts': [

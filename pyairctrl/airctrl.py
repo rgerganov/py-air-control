@@ -3,6 +3,7 @@
 import argparse
 import sys
 import pprint
+import asyncio
 
 from pyairctrl.status_transformer import STATUS_TRANSFORMER
 from pyairctrl.coap_client import CoAPAirClient
@@ -28,8 +29,8 @@ class CliBase:
                 ).expandtabs(30)
             )
 
-    def get_status(self, debug=False):
-        status = self._client.get_status(debug)
+    async def get_status(self, debug=False):
+        status = await self._client.get_status(debug)
         if status is None:
             print("No info found")
             return
@@ -95,8 +96,16 @@ class CoAPCliBase(CliBase):
 
 
 class CoAPCli(CoAPCliBase):
-    def __init__(self, host, port=5683, debug=False):
-        super().__init__(CoAPAirClient(host, port, debug))
+    def __init__(self, client):
+        super().__init__(client)
+
+    @classmethod
+    async def create(cls, host, port=5683, debug=False):
+        return cls(await CoAPAirClient.create(host, port, debug))
+
+    async def shutdown(self):
+        if self._client:
+            await self._client.shutdown()
 
 
 class PlainCoAPAirCli(CoAPCliBase):
@@ -135,7 +144,7 @@ class HTTPAirCli(CliBase):
         self._dump_keys(firmware, None, False)
 
 
-def main():
+async def async_main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--ipaddr", help="IP address of air purifier")
     parser.add_argument(
@@ -202,7 +211,7 @@ def main():
         elif args.protocol == "plain_coap":
             c = PlainCoAPAirCli(device["ip"])
         elif args.protocol == "coap":
-            c = CoAPCli(device["ip"], debug=args.debug)
+            c = await CoAPCli.create(device["ip"], debug=args.debug)
 
         if args.wifi:
             c.get_wifi()
@@ -242,7 +251,15 @@ def main():
         if values:
             c.set_values(values, debug=args.debug)
         else:
-            c.get_status(debug=args.debug)
+            await c.get_status(debug=args.debug)
+            await c.shutdown()
+
+
+def main():
+    try:
+        asyncio.run(async_main())
+    except KeyboardInterrupt:
+        pass
 
 
 if __name__ == "__main__":
