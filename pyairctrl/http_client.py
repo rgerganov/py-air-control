@@ -12,6 +12,7 @@ import socket
 import urllib.request
 import xml.etree.ElementTree as ET
 
+from collections import OrderedDict
 from Cryptodome.Cipher import AES
 from Cryptodome.Util.Padding import pad, unpad
 
@@ -68,7 +69,9 @@ class HTTPAirClient:
         urls = {}
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) as s:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+            if hasattr(socket, "SO_REUSEPORT"):
+                # SO_REUSEPORT is not supported on some systems
+                s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
             s.setsockopt(socket.SOL_IP, socket.IP_MULTICAST_TTL, 20)
             s.settimeout(timeout)
             for i in range(repeats):
@@ -190,7 +193,7 @@ class HTTPAirClient:
         with urllib.request.urlopen(url) as response:
             resp = response.read()
             resp = decrypt(resp.decode("ascii"), self._session_key)
-            return json.loads(resp)
+            return json.loads(resp, object_pairs_hook=OrderedDict)
 
     def _get(self, url):
         try:
@@ -202,7 +205,7 @@ class HTTPAirClient:
             self._get_key()
             return self._get_once(url)
 
-    def get_status(self):
+    def get_status(self, debug=False):
         url = "http://{}/di/v1/products/1/air".format(self._host)
         status = self._get(url)
         return status

@@ -10,6 +10,7 @@ import struct
 import sys
 import time
 
+from collections import OrderedDict
 from coapthon import defines
 from coapthon.client.helperclient import HelperClient
 from coapthon.messages.request import Request
@@ -45,6 +46,7 @@ class PlainCoAPAirClient:
 
     def _get(self):
         path = "/sys/dev/status"
+        response = None
         try:
             client = self._create_coap_client(self.server, self.port)
             self._send_hello_sequence(client)
@@ -55,10 +57,12 @@ class PlainCoAPAirClient:
             request.observe = 0
             response = client.send_request(request, None, 2)
         finally:
+            if response:
+                client.cancel_observing(response, True)
             client.stop()
 
         if response:
-            return json.loads(response.payload)["state"]["reported"]
+            return json.loads(response.payload, object_pairs_hook=OrderedDict)["state"]["reported"]
         else:
             return {}
 

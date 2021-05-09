@@ -8,6 +8,7 @@ import binascii
 import flask
 from Cryptodome.Cipher import AES
 from Cryptodome.Util.Padding import pad, unpad
+from collections import OrderedDict
 
 
 class HttpTestController:
@@ -105,7 +106,7 @@ class HttpTestController:
 
     def _callback_get_data(self, dataset):
         data = self._test_data["http"][dataset]["data"]
-        json_data = json.loads(data)
+        json_data = json.loads(data, object_pairs_hook=OrderedDict)
         _encrypted_data = self._padding_encrypt(
             json_data, bytes(self._device_key.encode("ascii"))
         )
