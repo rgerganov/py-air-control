@@ -58,7 +58,7 @@ class TestCoap:
         yield server
         server.stop()
 
-    def test_sync_was_called(self, air_client):
+    def test_initConnection_was_called(self, air_client):
         assert air_client.client_key == SyncResource.SYNC_KEY
 
     def test_set_values(self, air_client):

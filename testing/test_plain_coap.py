@@ -11,7 +11,19 @@ from plain_coap_resources import ControlResource, StatusResource
 
 class TestPlainCoap:
     @pytest.fixture(scope="class")
-    def air_client(self):
+    def monkeyclass(self):
+        from _pytest.monkeypatch import MonkeyPatch
+
+        mpatch = MonkeyPatch()
+        yield mpatch
+        mpatch.undo()
+
+    @pytest.fixture(scope="class")
+    def air_client(self, monkeyclass):
+        def initConnection(client):
+            return
+
+        monkeyclass.setattr(PlainCoAPAirClient, "_initConnection", initConnection)
         return PlainCoAPAirClient("127.0.0.1")
 
     @pytest.fixture(scope="class")
@@ -49,73 +61,72 @@ class TestPlainCoap:
         yield server
         server.stop()
 
-    def test_set_values(self, air_client, monkeypatch):
-        def send_hello_sequence(client):
-            return
-
-        monkeypatch.setattr(air_client, "_send_hello_sequence", send_hello_sequence)
-
+    def test_set_values(self, air_client):
         values = {}
         values["mode"] = "A"
         result = air_client.set_values(values)
         assert result
 
-    def test_get_status_is_valid(self, air_client, test_data, monkeypatch):
+    def test_get_status_is_valid(self, air_client, test_data):
         self.assert_json_data(
-            air_client.get_status, "status", test_data, monkeypatch, air_client,
-        )
-
-    def test_get_firmware_is_valid(self, air_client, test_data, monkeypatch):
-        self.assert_json_data(
-            air_client.get_firmware, "status", test_data, monkeypatch, air_client,
-        )
-
-    def test_get_filters_is_valid(self, air_client, test_data, monkeypatch):
-        self.assert_json_data(
-            air_client.get_filters, "status", test_data, monkeypatch, air_client,
-        )
-
-    def test_get_cli_status_is_valid(self, air_cli, test_data, monkeypatch, capfd):
-        self.assert_cli_data(
-            air_cli.get_status, "status-cli", test_data, monkeypatch, air_cli, capfd,
-        )
-
-    def test_get_cli_firmware_is_valid(self, air_cli, test_data, monkeypatch, capfd):
-        self.assert_cli_data(
-            air_cli.get_firmware,
-            "firmware-cli",
+            air_client.get_status,
+            "status",
             test_data,
-            monkeypatch,
+            air_client,
+        )
+
+    def test_get_firmware_is_valid(self, air_client, test_data):
+        self.assert_json_data(
+            air_client.get_firmware,
+            "status",
+            test_data,
+            air_client,
+        )
+
+    def test_get_filters_is_valid(self, air_client, test_data):
+        self.assert_json_data(
+            air_client.get_filters,
+            "status",
+            test_data,
+            air_client,
+        )
+
+    def test_get_cli_status_is_valid(self, air_cli, test_data, capfd):
+        self.assert_cli_data(
+            air_cli.get_status,
+            "status-cli",
+            test_data,
             air_cli,
             capfd,
         )
 
-    def test_get_cli_filters_is_valid(self, air_cli, test_data, monkeypatch, capfd):
+    def test_get_cli_firmware_is_valid(self, air_cli, test_data, capfd):
         self.assert_cli_data(
-            air_cli.get_filters, "fltsts-cli", test_data, monkeypatch, air_cli, capfd,
+            air_cli.get_firmware,
+            "firmware-cli",
+            test_data,
+            air_cli,
+            capfd,
         )
 
-    def assert_json_data(self, air_func, dataset, test_data, monkeypatch, air_client):
-        def send_hello_sequence(client):
-            return
+    def test_get_cli_filters_is_valid(self, air_cli, test_data, capfd):
+        self.assert_cli_data(
+            air_cli.get_filters,
+            "fltsts-cli",
+            test_data,
+            air_cli,
+            capfd,
+        )
 
-        monkeypatch.setattr(air_client, "_send_hello_sequence", send_hello_sequence)
-
+    def assert_json_data(self, air_func, dataset, test_data, air_client):
         result = air_func()
         data = test_data["plain-coap"][dataset]["data"]
         json_data = json.loads(data)
         assert result == json_data
 
     def assert_cli_data(
-        self, air_func, dataset, test_data, monkeypatch, air_cli, capfd
+        self, air_func, dataset, test_data, air_cli, capfd
     ):
-        def send_hello_sequence(client):
-            return
-
-        monkeypatch.setattr(
-            air_cli._client, "_send_hello_sequence", send_hello_sequence
-        )
-
         air_func()
         result, err = capfd.readouterr()
 
