@@ -10,8 +10,14 @@ import os
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 
-from coapthon import defines
-from coapthon.client.helperclient import HelperClient
+from pyairctrl import aiocoap_monkeypatch
+from aiocoap import (
+    Context,
+    GET,
+    Message,
+    NON,
+    POST,
+)
 from Cryptodome.Cipher import AES
 from Cryptodome.Util.Padding import pad, unpad
 
@@ -24,18 +30,37 @@ class NotSupportedException(Exception):
     pass
 
 
-class HTTPAirClientBase(ABC):
+class CoAPAirClientBase(ABC):
+    STATUS_PATH = "/sys/dev/status"
+    CONTROL_PATH = "/sys/dev/control"
+    SYNC_PATH = "/sys/dev/sync"
+
     def __init__(self, host, port, debug=False):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.setLevel("WARN")
         self.server = host
         self.port = port
         self.debug = debug
+        self.client = None
 
-    def get_status(self, debug=False):
+    @classmethod
+    async def create(cls, *args, **kwargs):
+        obj = cls(*args, **kwargs)
+        await obj._init()
+        return obj
+
+    async def _init(self):
+        self.client = await Context.create_client_context()
+        await self._initConnection()
+
+    async def shutdown(self) -> None:
+        if self.client:
+            await self.client.shutdown()
+
+    async def get_status(self, debug=False):
         if debug:
             self.logger.setLevel("DEBUG")
-        status = self._get()
+        status = await self._get()
         return status
 
     def set_values(self, values, debug=False):
@@ -48,20 +73,71 @@ class HTTPAirClientBase(ABC):
 
         return result
 
+    async def _get(self):
+        payload = None
+
+        try:
+            request = Message(
+                code=GET,
+                mtype=NON,
+                uri=f"coap://{self.server}:{self.port}{self.STATUS_PATH}",
+            )
+            request.opt.observe = 0
+            response = await self.client.request(request).response
+            if response:
+                payload = self._transform_payload_after_receiving(
+                    response.payload.decode()
+                )
+        except Exception as e:
+            print("Unexpected error:{}".format(e))
+
+        if payload:
+            try:
+                return json.loads(payload, object_pairs_hook=OrderedDict)["state"][
+                    "reported"
+                ]
+            except json.decoder.JSONDecodeError:
+                print("JSONDecodeError, you may have choosen the wrong coap protocol!")
+
+        return {}
+
+    def _set(self, key, payload):
+        try:
+            payload = self._transform_payload_before_sending(json.dumps(payload))
+            response = self.client.post(self.CONTROL_PATH, payload)
+
+            if self.debug:
+                print(response)
+            return response.payload == '{"status":"success"}'
+        except Exception as e:
+            print("Unexpected error:{}".format(e))
+
+    def _send_empty_message(self):
+        request = Request()
+        request.destination = server = (self.server, self.port)
+        request.code = defines.Codes.EMPTY.number
+        self.client.send_empty(request)
+
     @abstractmethod
-    def _get(self):
+    async def _initConnection(self):
         pass
 
     @abstractmethod
-    def _set(self, key, value):
+    def _transform_payload_after_receiving(self, payload):
+        pass
+
+    @abstractmethod
+    def _transform_payload_before_sending(self, payload):
         pass
 
     def get_firmware(self):
         status = self._get()
+        # TODO Really transmit full status here?
         return status
 
     def get_filters(self):
         status = self._get()
+        # TODO Really transmit full status here?
         return status
 
     def get_wifi(self):
@@ -71,50 +147,49 @@ class HTTPAirClientBase(ABC):
         raise NotSupportedException
 
 
-class CoAPAirClient(HTTPAirClientBase):
+class CoAPAirClient(CoAPAirClientBase):
     SECRET_KEY = "JiangPan"
 
     def __init__(self, host, port=5683, debug=False):
         super().__init__(host, port, debug)
-        self.client = self._create_coap_client(self.server, self.port)
-        self.response = None
-        self._sync()
 
-    def __del__(self):
-        # TODO call a close method explicitly instead
-        if self.response:
-            self.client.cancel_observing(self.response, True)        
-        self.client.stop()        
-
-    def _create_coap_client(self, host, port):
-        return HelperClient(server=(host, port))
-
-    def _sync(self):
-        self.syncrequest = binascii.hexlify(os.urandom(4)).decode("utf8").upper()
-        resp = self.client.post("/sys/dev/sync", self.syncrequest, timeout=5)
+    async def _initConnection(self):
+        syncrequest = os.urandom(4).hex().upper()
+        request = Message(
+            code=POST,
+            mtype=NON,
+            uri=f"coap://{self.server}:{self.port}{self.SYNC_PATH}",
+            payload=syncrequest.encode(),
+        )
+        resp = await self.client.request(request).response
         if resp:
             self.client_key = resp.payload
         else:
             self.client.stop()
             raise Exception("sync timeout")
 
-    def _decrypt_payload(self, encrypted_payload):
-        encoded_counter = encrypted_payload[0:8]
-        aes = self._handle_AES(encoded_counter)
-        encoded_message = encrypted_payload[8:-64].upper()
-        digest = encrypted_payload[-64:]
-        calculated_digest = self._create_digest(encoded_counter, encoded_message)
-        if digest != calculated_digest:
-            raise WrongDigestException
-        decoded_message = aes.decrypt(bytes.fromhex(encoded_message))
-        unpaded_message = unpad(decoded_message, 16, style="pkcs7")
-        return unpaded_message.decode("utf8")
+    def _transform_payload_after_receiving(self, encrypted_payload):
+        try:
+            encoded_counter = encrypted_payload[0:8]
+            aes = self._handle_AES(encoded_counter)
+            encoded_message = encrypted_payload[8:-64].upper()
+            digest = encrypted_payload[-64:]
+            calculated_digest = self._create_digest(encoded_counter, encoded_message)
+            if digest != calculated_digest:
+                raise WrongDigestException
+            decoded_message = aes.decrypt(bytes.fromhex(encoded_message))
+            unpaded_message = unpad(decoded_message, 16, style="pkcs7")
+            return unpaded_message.decode("utf8")
+        except WrongDigestException:
+            print("Message from device got corrupted")
 
-    def _encrypt_payload(self, payload):
+    def _transform_payload_before_sending(self, payload):
         self._update_client_key()
         aes = self._handle_AES(self.client_key)
         paded_message = pad(bytes(payload.encode("utf8")), 16, style="pkcs7")
-        encoded_message = binascii.hexlify(aes.encrypt(paded_message)).decode("utf8").upper()
+        encoded_message = (
+            binascii.hexlify(aes.encrypt(paded_message)).decode("utf8").upper()
+        )
         digest = self._create_digest(self.client_key, encoded_message)
         return self.client_key + encoded_message + digest
 
@@ -138,45 +213,15 @@ class CoAPAirClient(HTTPAirClientBase):
             bytes(secret_key.encode("utf8")), AES.MODE_CBC, bytes(iv.encode("utf8"))
         )
 
-    def _get(self):
-        path = "/sys/dev/status"
-        decrypted_payload = None
-
-        try:
-            request = self.client.mk_request(defines.Codes.GET, path)
-            request.observe = 0
-            self.response = self.client.send_request(request, None, 2)
-            encrypted_payload = self.response.payload
-            decrypted_payload = self._decrypt_payload(encrypted_payload)
-        except WrongDigestException:
-            print("Message from device got corrupted")
-        except Exception as e:
-            print("Unexpected error:{}".format(e))
-
-        if decrypted_payload is not None:
-            return json.loads(decrypted_payload, object_pairs_hook=OrderedDict)[
-                "state"
-            ]["reported"]
-        else:
-            return {}
-
     def _set(self, key, value):
-        path = "/sys/dev/control"
-        try:
-            payload = {
-                "state": {
-                    "desired": {
-                        "CommandType": "app",
-                        "DeviceId": "",
-                        "EnduserId": "",
-                        key: value,
-                    }
+        payload = {
+            "state": {
+                "desired": {
+                    "CommandType": "app",
+                    "DeviceId": "",
+                    "EnduserId": "",
+                    key: value,
                 }
             }
-            encrypted_payload = self._encrypt_payload(json.dumps(payload))
-            response = self.client.post(path, encrypted_payload)
-            if self.debug:
-                print(response)
-            return response.payload == '{"status":"success"}'
-        except Exception as e:
-            print("Unexpected error:{}".format(e))
+        }
+        return super()._set(key, payload)

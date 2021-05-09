@@ -74,12 +74,12 @@ class StatusResource(EncryptedResourceBase):
         response.payload = '{{"state":{{"reported": {} }} }}'.format(
             self.test_data["coap"][self.dataset]["data"]
         )
-        response.payload = self._encrypt_payload(response.payload)
+        response.payload = self._transform_payload_before_sending(response.payload)
         if self.render_callback is not None:
             response.payload = self.render_callback(response.payload)
         return self, response
 
-    def _encrypt_payload(self, payload):
+    def _transform_payload_before_sending(self, payload):
         aes = self._handle_AES(self.encryption_key)
         paded_message = pad(bytes(payload.encode("utf8")), 16, style="pkcs7")
         encoded_message = binascii.hexlify(aes.encrypt(paded_message)).decode("utf8").upper()
@@ -102,14 +102,14 @@ class ControlResource(EncryptedResourceBase):
             raise Exception("ControlResource: set data before running tests")
 
         encrypted_payload = request.payload
-        decrypted_payload = self._decrypt_payload(encrypted_payload)
+        decrypted_payload = self._transform_payload_after_receiving(encrypted_payload)
         change_request = json.loads(decrypted_payload)["state"]["desired"]
         success = "success" if json.loads(self.data) == change_request else "failed"
 
         response.payload = '{{"status":"{}"}}'.format(success)
         return self, response
 
-    def _decrypt_payload(self, encrypted_payload):
+    def _transform_payload_after_receiving(self, encrypted_payload):
         self.encoded_counter = encrypted_payload[0:8]
         aes = self._handle_AES(self.encoded_counter)
         encoded_message = encrypted_payload[8:-64].upper()
