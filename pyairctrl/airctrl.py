@@ -13,8 +13,9 @@ from pyairctrl.plain_coap_client import PlainCoAPAirClient
 
 
 class CliBase:
-    def __init__(self, client):
+    def __init__(self, client, debug):
         self._client = client
+        self._debug = debug
 
     def _dump_keys(self, status, subset, printKey):
         for key in status:
@@ -30,18 +31,18 @@ class CliBase:
                 ).expandtabs(30)
             )
 
-    def get_status(self, debug=False):
-        status = self._client.get_status(debug)
+    def get_status(self):
+        status = self._client.get_status()
         if status is None:
             print("No info found")
             return
 
-        if debug:
+        if self._debug:
             print("Raw status:")
             print(json.dumps(status, indent=4))
         self._dump_keys(status, None, True)
 
-    def set_values(self, values, debug=False):
+    def set_values(self, values):
         try:
             values = self._client.set_values(values)
         except urllib.error.HTTPError as e:
@@ -82,8 +83,8 @@ class CliBase:
 
 
 class CoAPCliBase(CliBase):
-    def __init__(self, client):
-        super().__init__(client)
+    def __init__(self, client, debug):
+        super().__init__(client, debug)
 
     def get_wifi(self):
         print(
@@ -97,13 +98,13 @@ class CoAPCliBase(CliBase):
 
 
 class CoAPCli(CoAPCliBase):
-    def __init__(self, host, port=5683, debug=False):
-        super().__init__(CoAPAirClient(host, port, debug))
+    def __init__(self, host, debug):
+        super().__init__(CoAPAirClient(host, debug=debug), debug)
 
 
 class PlainCoAPAirCli(CoAPCliBase):
-    def __init__(self, host, port=5683):
-        super().__init__(PlainCoAPAirClient(host, port))
+    def __init__(self, host, debug):
+        super().__init__(PlainCoAPAirClient(host, debug=debug), debug)
 
 
 class HTTPAirCli(CliBase):
@@ -114,8 +115,8 @@ class HTTPAirCli(CliBase):
             pprint.pprint(response)
         return response
 
-    def __init__(self, host, debug=True):
-        super().__init__(HTTPAirClient(host, debug))
+    def __init__(self, host, debug):
+        super().__init__(HTTPAirClient(host, debug=debug), debug)
 
     def set_wifi(self, ssid, pwd):
         values = {}
@@ -200,9 +201,9 @@ def main():
 
     for device in devices:
         if args.protocol == "http":
-            c = HTTPAirCli(device["ip"])
+            c = HTTPAirCli(device["ip"], debug=args.debug)
         elif args.protocol == "plain_coap":
-            c = PlainCoAPAirCli(device["ip"])
+            c = PlainCoAPAirCli(device["ip"], debug=args.debug)
         elif args.protocol == "coap":
             c = CoAPCli(device["ip"], debug=args.debug)
 
@@ -242,9 +243,9 @@ def main():
             values["cl"] = args.cl == "True"
 
         if values:
-            c.set_values(values, debug=args.debug)
+            c.set_values(values)
         else:
-            c.get_status(debug=args.debug)
+            c.get_status()
 
 
 if __name__ == "__main__":

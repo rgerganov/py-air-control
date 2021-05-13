@@ -15,6 +15,7 @@ import xml.etree.ElementTree as ET
 from collections import OrderedDict
 from Cryptodome.Cipher import AES
 from Cryptodome.Util.Padding import pad, unpad
+from .base_client import AirClientBase
 
 G = int(
     "A4D1CBD5C3FD34126765A442EFB99905F8104DD258AC507FD6406CFF14266D31266FEA1E5C41564B777E690F5504F213160217B4B01B886A5E91547F9E2749F4D7FBD7D3B9A92EE1909D0D2263F80A76A6A24C087A091F531DBF0A0169B6A28AD662A4D18E73AFA32D779D5918D08BC8858F4DCEF97C2A24855E6EEB22B3B2E5",
@@ -50,7 +51,7 @@ def decrypt(data, key):
     return response.decode("ascii")
 
 
-class HTTPAirClient:
+class HTTPAirClient(AirClientBase):
     @staticmethod
     def ssdp(timeout=1, repeats=3):
         addr = "239.255.255.250"
@@ -105,9 +106,8 @@ class HTTPAirClient:
         return resp
 
     def __init__(self, host, debug=False):
-        self._host = host
+        super().__init__(host, debug)
         self._session_key = None
-        self._debug = debug
         self.load_key()
 
     def _get_key(self):
@@ -205,7 +205,7 @@ class HTTPAirClient:
             self._get_key()
             return self._get_once(url)
 
-    def get_status(self, debug=False):
+    def get_status(self):
         url = "http://{}/di/v1/products/1/air".format(self._host)
         status = self._get(url)
         return status

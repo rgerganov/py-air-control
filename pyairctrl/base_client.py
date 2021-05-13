@@ -7,23 +7,30 @@ from coapthon import defines
 from coapthon.client.helperclient import HelperClient
 from coapthon.messages.request import Request
 
+from pyairctrl.status_transformer import STATUS_TRANSFORMER
+
 
 class NotSupportedException(Exception):
     pass
 
 
-class CoAPAirClientBase(ABC):
+class AirClientBase(ABC):
+    def __init__(self, host, debug=False):
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger.setLevel("WARN") if debug else self.logger.setLevel("DEBUG")
+        self._host = host
+        self._debug = debug
+
+
+class CoAPAirClientBase(AirClientBase):
     STATUS_PATH = "/sys/dev/status"
     CONTROL_PATH = "/sys/dev/control"
     SYNC_PATH = "/sys/dev/sync"
 
     def __init__(self, host, port, debug=False):
-        self.logger = logging.getLogger(self.__class__.__name__)
-        self.logger.setLevel("WARN")
-        self.server = host
+        super().__init__(host, debug)
         self.port = port
-        self.debug = debug
-        self.client = self._create_coap_client(self.server, self.port)
+        self.client = self._create_coap_client(self._host, self.port)
         self.response = None
         self._initConnection()
 
@@ -35,16 +42,11 @@ class CoAPAirClientBase(ABC):
     def _create_coap_client(self, host, port):
         return HelperClient(server=(host, port))
 
-    def get_status(self, debug=False):
-        if debug:
-            self.logger.setLevel("DEBUG")
+    def get_status(self, subset=None):
         status = self._get()
         return status
 
-    def set_values(self, values, debug=False):
-        if debug:
-            self.logger.setLevel("DEBUG")
-
+    def set_values(self, values):
         result = True
         for key in values:
             result = result and self._set(key, values[key])
@@ -78,7 +80,7 @@ class CoAPAirClientBase(ABC):
             payload = self._transform_payload_before_sending(json.dumps(payload))
             response = self.client.post(self.CONTROL_PATH, payload)
 
-            if self.debug:
+            if self._debug:
                 print(response)
             return response.payload == '{"status":"success"}'
         except Exception as e:
@@ -86,7 +88,7 @@ class CoAPAirClientBase(ABC):
 
     def _send_empty_message(self):
         request = Request()
-        request.destination = server = (self.server, self.port)
+        request.destination = server = (self._host, self.port)
         request.code = defines.Codes.EMPTY.number
         self.client.send_empty(request)
 
