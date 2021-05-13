@@ -47,7 +47,7 @@ STATUS_TRANSFORMER = {
         "rawDescription": "in ms",
         "transformDescription": "in h",
         "subsets": ["status"],
-        "transform": lambda runtime: round(((runtime / (1000 * 60 * 60)) % 24), 2),
+        "transform": lambda runtime: round(runtime / (1000 * 60 * 60), 2),
     },
     "pwr": {
         "fieldname": "Power",
