@@ -245,6 +245,7 @@ def main():
 
         if values:
             c.set_values(values)
+            c.get_status()
         else:
             c.get_status()
 
