@@ -6,10 +6,10 @@ import pprint
 import json
 import urllib
 
-from pyairctrl.status_transformer import STATUS_TRANSFORMER
 from pyairctrl.coap_client import CoAPAirClient
 from pyairctrl.http_client import HTTPAirClient
 from pyairctrl.plain_coap_client import PlainCoAPAirClient
+from pyairctrl.cli_format import CLI_FORMAT
 
 
 class CliBase:
@@ -17,12 +17,13 @@ class CliBase:
         self._client = client
         self._debug = debug
 
-    def _dump_keys(self, status, subset, printKey):
+    @staticmethod
+    def _format_key_values(status, printKey):
         for key in status:
-            current_value = status[key]
-            name_and_value = self._get_info_for_key(key, current_value, subset)
-            if name_and_value is None:
+            if status[key]["value"] is None:
                 continue
+
+            name_and_value = CliBase._get_name_for_key(key, status[key])
 
             prefix = "[{key}]\t".format(key=key) if printKey else ""
             print(
@@ -30,6 +31,17 @@ class CliBase:
                     prefix=prefix, name_and_value=name_and_value
                 ).expandtabs(30)
             )
+
+    @staticmethod
+    def _get_name_for_key(key, singleEntry):
+        formatter = (
+            CLI_FORMAT[key]["format"]
+            if key in CLI_FORMAT
+            else "{name}: {{}}".format(name=singleEntry["name"])
+            if not singleEntry["name"] is None
+            else "{name}: {{}}".format(name=key)
+        )
+        return formatter.format(singleEntry["value"])
 
     def get_status(self):
         status = self._client.get_status()
@@ -40,7 +52,7 @@ class CliBase:
         if self._debug:
             print("Raw status:")
             print(json.dumps(status, indent=4))
-        self._dump_keys(status, None, True)
+        self._format_key_values(status, True)
 
     def set_values(self, values):
         try:
@@ -48,30 +60,16 @@ class CliBase:
         except urllib.error.HTTPError as e:
             print("Error setting values (response code: {})".format(e.code))
 
-    def _get_info_for_key(self, key, current_value, subset):
-        if key in STATUS_TRANSFORMER:
-            info = STATUS_TRANSFORMER[key]
-            if not subset is None and subset != info[1]:
-                return None
-
-            if not info[2] is None:
-                current_value = info[2](current_value)
-                if current_value is None:
-                    return None
-            return info[0].format(current_value)
-        else:
-            if not subset is None:
-                return None
-
-        return "{}: {}".format(key, current_value)
-
     def get_filters(self):
         status = self._client.get_filters()
         if status is None:
             print("No filter-info found")
             return
 
-        self._dump_keys(status, "filter", False)
+        if self._debug:
+            print("Raw status:")
+            print(json.dumps(status, indent=4))
+        self._format_key_values(status, False)
 
     def get_firmware(self):
         status = self._client.get_firmware()
@@ -79,7 +77,10 @@ class CliBase:
             print("No firmware-info found")
             return
 
-        self._dump_keys(status, "firmware", False)
+        if self._debug:
+            print("Raw status:")
+            print(json.dumps(status, indent=4))
+        self._format_key_values(status, False)
 
 
 class CoAPCliBase(CliBase):
@@ -131,11 +132,11 @@ class HTTPAirCli(CliBase):
 
     def get_wifi(self):
         wifi = self._client.get_wifi()
-        self._dump_keys(wifi, None, False)
+        self._format_key_values(wifi, False)
 
     def get_firmware(self):
         firmware = self._client.get_firmware()
-        self._dump_keys(firmware, None, False)
+        self._format_key_values(firmware, False)
 
 
 def main():

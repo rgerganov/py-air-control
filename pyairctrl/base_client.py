@@ -21,6 +21,50 @@ class AirClientBase(ABC):
         self._host = host
         self._debug = debug
 
+    def _get_info_for_key(self, key, raw_value, subset):
+        current_value = raw_value
+        subsets = None
+        name = None
+        rawDescription = None
+        valueDescription = None
+
+        if key in STATUS_TRANSFORMER:
+            instructions = STATUS_TRANSFORMER[key]
+            name = instructions["fieldname"]
+            subsets = instructions["subsets"]
+            rawDescription = instructions["rawDescription"]
+            valueDescription = instructions["transformDescription"]
+
+            if not subset is None and subset not in subsets:
+                return None
+
+            if not instructions["transform"] is None:
+                current_value = instructions["transform"](raw_value)
+        else:
+            if not subset is None:
+                return None
+
+        return {
+            "name": name,
+            "raw": raw_value,
+            "value": current_value,
+            "subsets": subsets,
+            "rawDescription": rawDescription,
+            "valueDescription": valueDescription,
+        }
+
+    def _dump_keys(self, status, subset):
+        new_status = status.copy()
+        for key in status:
+            current_value = status[key]
+            name_and_value = self._get_info_for_key(key, current_value, subset)
+            if name_and_value is None:
+                new_status.pop(key, None)
+                continue
+
+            new_status[key] = name_and_value
+        return new_status
+
 
 class CoAPAirClientBase(AirClientBase):
     STATUS_PATH = "/sys/dev/status"
@@ -42,8 +86,9 @@ class CoAPAirClientBase(AirClientBase):
     def _create_coap_client(self, host, port):
         return HelperClient(server=(host, port))
 
-    def get_status(self, subset=None):
+    def get_status(self):
         status = self._get()
+        status = self._dump_keys(status, None)
         return status
 
     def set_values(self, values):
@@ -106,12 +151,12 @@ class CoAPAirClientBase(AirClientBase):
 
     def get_firmware(self):
         status = self._get()
-        # TODO Really transmit full status here?
+        status = self._dump_keys(status, "firmware")
         return status
 
     def get_filters(self):
         status = self._get()
-        # TODO Really transmit full status here?
+        status = self._dump_keys(status, "filter")
         return status
 
     def get_wifi(self):
