@@ -1,33 +1,35 @@
 #!/usr/bin/env python3
 
-from abc import ABC, abstractmethod
 import argparse
 import sys
 import pprint
 import json
-import urllib
 
-from pyairctrl.base_client import NotSupportedException, AirClientBase
+from pyairctrl.base_client import (
+    NotSupportedException,
+    SetValueException,
+    AirClientBase,
+)
 from pyairctrl.coap_client import CoAPAirClient
 from pyairctrl.http_client import HTTPAirClient
 from pyairctrl.plain_coap_client import PlainCoAPAirClient
 from pyairctrl.cli_format import CLI_FORMAT
 
 
-class CliBase(ABC):
+class ClientFactory:
     def __init__(self, client, debug):
         self._client: AirClientBase = client
         self._debug = debug
 
     @staticmethod
-    def _format_key_values(status, printKey):
+    def _format_key_values(status):
         for key in status:
             if status[key]["value"] is None:
                 continue
 
-            name_and_value = CliBase._get_name_for_key(key, status[key])
+            name_and_value = ClientFactory._get_name_for_key(key, status[key])
 
-            prefix = "[{key}]\t".format(key=key) if printKey else ""
+            prefix = "[{key}]\t".format(key=key)
             print(
                 "{prefix}{name_and_value}".format(
                     prefix=prefix, name_and_value=name_and_value
@@ -45,7 +47,7 @@ class CliBase(ABC):
         )
         return formatter.format(singleEntry["value"])
 
-    def _get_information(self, printKey=True, subset=None):
+    def get_information(self, subset=None):
         try:
             status = self._client.get_information(subset)
             if status is None:
@@ -58,35 +60,25 @@ class CliBase(ABC):
             if self._debug:
                 print("Raw status:")
                 print(json.dumps(status, indent=4))
-            self._format_key_values(status, printKey)
+            self._format_key_values(status)
         except NotSupportedException as e:
             print(e)
 
-    def set_values(self, values):
+    def set_values(self, subset, values):
         try:
-            values = self._client.set_values(values)
-        except urllib.error.HTTPError as e:
-            print("Error setting values (response code: {})".format(e.code))
-
-    def get_status(self):
-        self._get_information()
-
-    def get_firmware(self):
-        self._get_information(printKey=False, subset="firmware")
-
-    def get_filters(self):
-        self._get_information(printKey=False, subset="filter")
-
-    def get_wifi(self):
-        self._get_information(printKey=False, subset="wifi")
+            if self._debug:
+                pprint.pprint(values)
+            values = self._client.set_values(subset, values)
+        except (NotSupportedException, SetValueException) as e:
+            print(e)
 
     @classmethod
-    def get_devices(cls, ipaddr, debug):
+    def get_devices(cls, protocol, ipaddr, debug):
         if ipaddr:
             return [{"ip": ipaddr}]
 
         try:
-            client = cls.get_client_class()
+            client = cls.get_client_class(protocol)
             devices = client.get_devices(debug)
             if debug:
                 pprint.pprint(devices)
@@ -101,63 +93,18 @@ class CliBase(ABC):
             sys.exit(1)
 
     @classmethod
-    @abstractmethod
-    def get_client_class(cls) -> AirClientBase:
-        pass
+    def get_client_class(cls, protocol):
+        if protocol == "http":
+            return HTTPAirClient
+        elif protocol == "plain_coap":
+            return PlainCoAPAirClient
+        elif protocol == "coap":
+            return CoAPAirClient
 
     @classmethod
-    def create(cls, host, debug):
-        client = cls.get_client_class()
+    def create(cls, protocol, host, debug):
+        client = cls.get_client_class(protocol)
         return cls(client(host, debug=debug), debug)
-
-
-class CoAPCliBase(CliBase):
-    def __init__(self, client, debug):
-        super().__init__(client, debug)
-
-    def set_wifi(self, ssid, pwd):
-        print(
-            "Setting wifi credentials is currently not supported when using CoAP. Use the app instead."
-        )
-
-
-class CoAPCli(CoAPCliBase):
-    def __init__(self, client, debug):
-        super().__init__(client, debug)
-
-    @classmethod
-    def get_client_class(cls) -> AirClientBase:
-        return CoAPAirClient
-
-
-class PlainCoAPAirCli(CoAPCliBase):
-    def __init__(self, client, debug):
-        super().__init__(client, debug)
-
-    @classmethod
-    def get_client_class(cls) -> AirClientBase:
-        return PlainCoAPAirClient
-
-
-class HTTPAirCli(CliBase):
-    def __init__(self, client, debug):
-        super().__init__(client, debug)
-
-    @classmethod
-    def get_client_class(cls) -> AirClientBase:
-        return HTTPAirClient
-
-    # TODO make set_wifi generic?
-    def set_wifi(self, ssid, pwd):
-        values = {}
-        if ssid:
-            values["ssid"] = ssid
-        if pwd:
-            values["password"] = pwd
-        pprint.pprint(values)
-
-        wifi = self._client.set_wifi(ssid, pwd)
-        pprint.pprint(wifi)
 
 
 def main():
@@ -205,57 +152,50 @@ def main():
     parser.add_argument("--filters", help="read filters status", action="store_true")
     args = parser.parse_args()
 
-    if args.protocol == "http":
-        clitype = HTTPAirCli
-    elif args.protocol == "plain_coap":
-        clitype = PlainCoAPAirCli
-    elif args.protocol == "coap":
-        clitype = CoAPCli
-
-    devices = clitype.get_devices(args.ipaddr, debug=args.debug)
+    devices = ClientFactory.get_devices(args.protocol, args.ipaddr, debug=args.debug)
     for device in devices:
-        c = clitype.create(device["ip"], debug=args.debug)
+        c = ClientFactory.create(args.protocol, device["ip"], debug=args.debug)
 
-        if args.wifi:
-            c.get_wifi()
-            sys.exit(0)
+        subset = None
+        if args.wifi or args.wifi_ssid or args.wifi_pwd:
+            subset = "wifi"
         if args.firmware:
-            c.get_firmware()
-            sys.exit(0)
-        if args.wifi_ssid or args.wifi_pwd:
-            c.set_wifi(args.wifi_ssid, args.wifi_pwd)
-            sys.exit(0)
+            subset = "firmware"
         if args.filters:
-            c.get_filters()
-            sys.exit(0)
+            subset = "filter"
 
         values = {}
-        if args.om:
-            values["om"] = args.om
-        if args.pwr:
-            values["pwr"] = args.pwr
-        if args.mode:
-            values["mode"] = args.mode
-        if args.rhset:
-            values["rhset"] = int(args.rhset)
-        if args.func:
-            values["func"] = args.func
-        if args.aqil:
-            values["aqil"] = int(args.aqil)
-        if args.ddp:
-            values["ddp"] = args.ddp
-        if args.uil:
-            values["uil"] = args.uil
-        if args.dt:
-            values["dt"] = int(args.dt)
-        if args.cl:
-            values["cl"] = args.cl == "True"
+        if args.wifi_ssid:
+            values["ssid"] = args.wifi_ssid
+        if args.wifi_pwd:
+            values["password"] = args.wifi_pwd
+
+        if subset is None:
+            if args.om:
+                values["om"] = args.om
+            if args.pwr:
+                values["pwr"] = args.pwr
+            if args.mode:
+                values["mode"] = args.mode
+            if args.rhset:
+                values["rhset"] = int(args.rhset)
+            if args.func:
+                values["func"] = args.func
+            if args.aqil:
+                values["aqil"] = int(args.aqil)
+            if args.ddp:
+                values["ddp"] = args.ddp
+            if args.uil:
+                values["uil"] = args.uil
+            if args.dt:
+                values["dt"] = int(args.dt)
+            if args.cl:
+                values["cl"] = args.cl == "True"
 
         if values:
-            c.set_values(values)
-            c.get_status()
-        else:
-            c.get_status()
+            c.set_values(subset, values)
+
+        c.get_information(subset)
 
 
 if __name__ == "__main__":

@@ -15,7 +15,7 @@ import xml.etree.ElementTree as ET
 from collections import OrderedDict
 from Cryptodome.Cipher import AES
 from Cryptodome.Util.Padding import pad, unpad
-from .base_client import AirClientBase
+from .base_client import AirClientBase, SetValueException
 
 G = int(
     "A4D1CBD5C3FD34126765A442EFB99905F8104DD258AC507FD6406CFF14266D31266FEA1E5C41564B777E690F5504F213160217B4B01B886A5E91547F9E2749F4D7FBD7D3B9A92EE1909D0D2263F80A76A6A24C087A091F531DBF0A0169B6A28AD662A4D18E73AFA32D779D5918D08BC8858F4DCEF97C2A24855E6EEB22B3B2E5",
@@ -163,23 +163,28 @@ class HTTPAirClient(AirClientBase):
         url = "http://{}/di/v1/products/1/air".format(self._host)
         self._get(url)
 
-    def set_values(self, values):
-        body = encrypt(values, self._session_key)
-        url = "http://{}/di/v1/products/1/air".format(self._host)
-        req = urllib.request.Request(url=url, data=body, method="PUT")
-        with urllib.request.urlopen(req) as response:
-            resp = response.read()
-            resp = decrypt(resp.decode("ascii"), self._session_key)
-            status = json.loads(resp)
-            return status
+    def set_values(self, subset, values):
+        if subset == "wifi":
+            self._set_wifi(values)
+        else:
+            self._set_values(values)
 
-    def set_wifi(self, ssid, pwd):
-        values = {}
-        if ssid:
-            values["ssid"] = ssid
-        if pwd:
-            values["password"] = pwd
+    def _set_values(self, values):
+        try:
+            body = encrypt(values, self._session_key)
+            url = "http://{}/di/v1/products/1/air".format(self._host)
+            req = urllib.request.Request(url=url, data=body, method="PUT")
+            with urllib.request.urlopen(req) as response:
+                resp = response.read()
+                resp = decrypt(resp.decode("ascii"), self._session_key)
+                status = json.loads(resp)
+                return status
+        except urllib.error.HTTPError as e:
+            raise SetValueException(
+                "Error setting values (response code: {})".format(e.code)
+            )
 
+    def _set_wifi(self, values):
         body = encrypt(values, self._session_key)
         url = "http://{}/di/v1/products/0/wifi".format(self._host)
         req = urllib.request.Request(url=url, data=body, method="PUT")

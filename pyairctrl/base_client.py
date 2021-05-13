@@ -14,6 +14,10 @@ class NotSupportedException(Exception):
     pass
 
 
+class SetValueException(Exception):
+    pass
+
+
 class AirClientBase(ABC):
     def __init__(self, host, debug=False):
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -69,6 +73,10 @@ class AirClientBase(ABC):
     def get_information(self, subset=None):
         pass
 
+    @abstractmethod
+    def set_values(self, subset, values):
+        pass
+
     @classmethod
     @abstractmethod
     def get_devices(cls, timeout=1, repeats=3):
@@ -105,7 +113,12 @@ class CoAPAirClientBase(AirClientBase):
         status = self._dump_keys(status, subset)
         return status
 
-    def set_values(self, values):
+    def set_values(self, subset, values):
+        if subset == "wifi":
+            raise NotSupportedException(
+                "Setting wifi credentials is currently not supported when using CoAP. Use the app instead."
+            )
+
         result = True
         for key in values:
             result = result and self._set(key, values[key])
@@ -168,6 +181,3 @@ class CoAPAirClientBase(AirClientBase):
         raise NotSupportedException(
             "Autodetection is not supported when using CoAP. Use --ipaddr to set an IP address."
         )
-
-    def set_wifi(self, ssid, pwd):
-        raise NotSupportedException
