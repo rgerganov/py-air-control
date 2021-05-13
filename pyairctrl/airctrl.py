@@ -1,21 +1,22 @@
 #!/usr/bin/env python3
 
+from abc import ABC, abstractmethod
 import argparse
 import sys
 import pprint
 import json
 import urllib
 
-from pyairctrl.base_client import NotSupportedException
+from pyairctrl.base_client import NotSupportedException, AirClientBase
 from pyairctrl.coap_client import CoAPAirClient
 from pyairctrl.http_client import HTTPAirClient
 from pyairctrl.plain_coap_client import PlainCoAPAirClient
 from pyairctrl.cli_format import CLI_FORMAT
 
 
-class CliBase:
+class CliBase(ABC):
     def __init__(self, client, debug):
-        self._client = client
+        self._client: AirClientBase = client
         self._debug = debug
 
     @staticmethod
@@ -79,6 +80,36 @@ class CliBase:
     def get_wifi(self):
         self._get_information(printKey=False, subset="wifi")
 
+    @classmethod
+    def get_devices(cls, ipaddr, debug):
+        if ipaddr:
+            return [{"ip": ipaddr}]
+
+        try:
+            client = cls.get_client_class()
+            devices = client.get_devices(debug)
+            if debug:
+                pprint.pprint(devices)
+            if not devices:
+                print(
+                    "Air purifier not autodetected. Try --ipaddr option to force specific IP address."
+                )
+                sys.exit(1)
+            return devices
+        except NotSupportedException as e:
+            print(e)
+            sys.exit(1)
+
+    @classmethod
+    @abstractmethod
+    def get_client_class(cls) -> AirClientBase:
+        pass
+
+    @classmethod
+    def create(cls, host, debug):
+        client = cls.get_client_class()
+        return cls(client(host, debug=debug), debug)
+
 
 class CoAPCliBase(CliBase):
     def __init__(self, client, debug):
@@ -91,26 +122,32 @@ class CoAPCliBase(CliBase):
 
 
 class CoAPCli(CoAPCliBase):
-    def __init__(self, host, debug):
-        super().__init__(CoAPAirClient(host, debug=debug), debug)
+    def __init__(self, client, debug):
+        super().__init__(client, debug)
+
+    @classmethod
+    def get_client_class(cls) -> AirClientBase:
+        return CoAPAirClient
 
 
 class PlainCoAPAirCli(CoAPCliBase):
-    def __init__(self, host, debug):
-        super().__init__(PlainCoAPAirClient(host, debug=debug), debug)
+    def __init__(self, client, debug):
+        super().__init__(client, debug)
+
+    @classmethod
+    def get_client_class(cls) -> AirClientBase:
+        return PlainCoAPAirClient
 
 
 class HTTPAirCli(CliBase):
-    @staticmethod
-    def ssdp(timeout=1, repeats=3, debug=False):
-        response = HTTPAirClient.ssdp(timeout, repeats)
-        if debug:
-            pprint.pprint(response)
-        return response
+    def __init__(self, client, debug):
+        super().__init__(client, debug)
 
-    def __init__(self, host, debug):
-        super().__init__(HTTPAirClient(host, debug=debug), debug)
+    @classmethod
+    def get_client_class(cls) -> AirClientBase:
+        return HTTPAirClient
 
+    # TODO make set_wifi generic?
     def set_wifi(self, ssid, pwd):
         values = {}
         if ssid:
@@ -168,29 +205,16 @@ def main():
     parser.add_argument("--filters", help="read filters status", action="store_true")
     args = parser.parse_args()
 
-    if args.ipaddr:
-        devices = [{"ip": args.ipaddr}]
-    else:
-        if args.protocol in ["coap", "plain_coap"]:
-            print(
-                "Autodetection is not supported when using CoAP. Use --ipaddr to set an IP address."
-            )
-            sys.exit(1)
+    if args.protocol == "http":
+        clitype = HTTPAirCli
+    elif args.protocol == "plain_coap":
+        clitype = PlainCoAPAirCli
+    elif args.protocol == "coap":
+        clitype = CoAPCli
 
-        devices = HTTPAirCli.ssdp(debug=args.debug)
-        if not devices:
-            print(
-                "Air purifier not autodetected. Try --ipaddr option to force specific IP address."
-            )
-            sys.exit(1)
-
+    devices = clitype.get_devices(args.ipaddr, debug=args.debug)
     for device in devices:
-        if args.protocol == "http":
-            c = HTTPAirCli(device["ip"], debug=args.debug)
-        elif args.protocol == "plain_coap":
-            c = PlainCoAPAirCli(device["ip"], debug=args.debug)
-        elif args.protocol == "coap":
-            c = CoAPCli(device["ip"], debug=args.debug)
+        c = clitype.create(device["ip"], debug=args.debug)
 
         if args.wifi:
             c.get_wifi()

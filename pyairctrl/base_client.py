@@ -69,6 +69,11 @@ class AirClientBase(ABC):
     def get_information(self, subset=None):
         pass
 
+    @classmethod
+    @abstractmethod
+    def get_devices(cls, timeout=1, repeats=3):
+        pass
+
 
 class CoAPAirClientBase(AirClientBase):
     STATUS_PATH = "/sys/dev/status"
@@ -157,6 +162,12 @@ class CoAPAirClientBase(AirClientBase):
     @abstractmethod
     def _transform_payload_before_sending(self, payload):
         pass
+
+    @classmethod
+    def get_devices(cls, timeout=1, repeats=3):
+        raise NotSupportedException(
+            "Autodetection is not supported when using CoAP. Use --ipaddr to set an IP address."
+        )
 
     def set_wifi(self, ssid, pwd):
         raise NotSupportedException

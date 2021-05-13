@@ -52,8 +52,8 @@ def decrypt(data, key):
 
 
 class HTTPAirClient(AirClientBase):
-    @staticmethod
-    def ssdp(timeout=1, repeats=3):
+    @classmethod
+    def get_devices(cls, timeout=1, repeats=3):
         addr = "239.255.255.250"
         port = 1900
         msg = "\r\n".join(
