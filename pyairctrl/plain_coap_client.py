@@ -11,7 +11,7 @@ import sys
 import time
 
 from collections import OrderedDict
-from .coap_client import CoAPAirClientBase
+from .base_client import CoAPAirClientBase
 
 
 class PlainCoAPAirClient(CoAPAirClientBase):
@@ -36,11 +36,11 @@ class PlainCoAPAirClient(CoAPAirClientBase):
             ownIp = self._get_ip()
 
             header = self._create_icmp_header()
-            data = self._create_icmp_data(ownIp, self.port, self.server, self.port)
+            data = self._create_icmp_data(ownIp, self.port, self._host, self.port)
             packet = header + data
             packet = self._create_icmp_header(self._checksum_icmp(packet)) + data
 
-            self._send_over_socket(self.server, packet)
+            self._send_over_socket(self._host, packet)
 
             # that is needed to give device time to open coap port, otherwise it may not respond properly
             time.sleep(0.5)
