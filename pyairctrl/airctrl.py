@@ -3,6 +3,7 @@
 import argparse
 import sys
 import pprint
+import json
 
 from pyairctrl.status_transformer import STATUS_TRANSFORMER
 from pyairctrl.coap_client import CoAPAirClient
@@ -36,7 +37,7 @@ class CliBase:
 
         if debug:
             print("Raw status:")
-            pprint.pprint(status)
+            print(json.dumps(status, indent=4))
         self._dump_keys(status, None, True)
 
     def set_values(self, values, debug=False):
