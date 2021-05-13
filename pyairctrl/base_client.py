@@ -65,6 +65,10 @@ class AirClientBase(ABC):
             new_status[key] = name_and_value
         return new_status
 
+    @abstractmethod
+    def get_information(self, subset=None):
+        pass
+
 
 class CoAPAirClientBase(AirClientBase):
     STATUS_PATH = "/sys/dev/status"
@@ -86,9 +90,14 @@ class CoAPAirClientBase(AirClientBase):
     def _create_coap_client(self, host, port):
         return HelperClient(server=(host, port))
 
-    def get_status(self):
+    def get_information(self, subset=None):
+        if subset == "wifi":
+            raise NotSupportedException(
+                "Getting wifi credentials is currently not supported when using CoAP. Use the app instead."
+            )
+
         status = self._get()
-        status = self._dump_keys(status, None)
+        status = self._dump_keys(status, subset)
         return status
 
     def set_values(self, values):
@@ -148,19 +157,6 @@ class CoAPAirClientBase(AirClientBase):
     @abstractmethod
     def _transform_payload_before_sending(self, payload):
         pass
-
-    def get_firmware(self):
-        status = self._get()
-        status = self._dump_keys(status, "firmware")
-        return status
-
-    def get_filters(self):
-        status = self._get()
-        status = self._dump_keys(status, "filter")
-        return status
-
-    def get_wifi(self):
-        raise NotSupportedException
 
     def set_wifi(self, ssid, pwd):
         raise NotSupportedException

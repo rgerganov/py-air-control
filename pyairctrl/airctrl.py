@@ -6,6 +6,7 @@ import pprint
 import json
 import urllib
 
+from pyairctrl.base_client import NotSupportedException
 from pyairctrl.coap_client import CoAPAirClient
 from pyairctrl.http_client import HTTPAirClient
 from pyairctrl.plain_coap_client import PlainCoAPAirClient
@@ -43,16 +44,22 @@ class CliBase:
         )
         return formatter.format(singleEntry["value"])
 
-    def get_status(self):
-        status = self._client.get_status()
-        if status is None:
-            print("No info found")
-            return
+    def _get_information(self, printKey=True, subset=None):
+        try:
+            status = self._client.get_information(subset)
+            if status is None:
+                noneInfo = (
+                    "info" if subset is None else "{subset}-info".format(subset=subset)
+                )
+                print("No {noneInfo} found".format(noneInfo=noneInfo))
+                return
 
-        if self._debug:
-            print("Raw status:")
-            print(json.dumps(status, indent=4))
-        self._format_key_values(status, True)
+            if self._debug:
+                print("Raw status:")
+                print(json.dumps(status, indent=4))
+            self._format_key_values(status, printKey)
+        except NotSupportedException as e:
+            print(e)
 
     def set_values(self, values):
         try:
@@ -60,37 +67,22 @@ class CliBase:
         except urllib.error.HTTPError as e:
             print("Error setting values (response code: {})".format(e.code))
 
-    def get_filters(self):
-        status = self._client.get_filters()
-        if status is None:
-            print("No filter-info found")
-            return
-
-        if self._debug:
-            print("Raw status:")
-            print(json.dumps(status, indent=4))
-        self._format_key_values(status, False)
+    def get_status(self):
+        self._get_information()
 
     def get_firmware(self):
-        status = self._client.get_firmware()
-        if status is None:
-            print("No firmware-info found")
-            return
+        self._get_information(printKey=False, subset="firmware")
 
-        if self._debug:
-            print("Raw status:")
-            print(json.dumps(status, indent=4))
-        self._format_key_values(status, False)
+    def get_filters(self):
+        self._get_information(printKey=False, subset="filter")
+
+    def get_wifi(self):
+        self._get_information(printKey=False, subset="wifi")
 
 
 class CoAPCliBase(CliBase):
     def __init__(self, client, debug):
         super().__init__(client, debug)
-
-    def get_wifi(self):
-        print(
-            "Getting wifi credentials is currently not supported when using CoAP. Use the app instead."
-        )
 
     def set_wifi(self, ssid, pwd):
         print(
@@ -129,14 +121,6 @@ class HTTPAirCli(CliBase):
 
         wifi = self._client.set_wifi(ssid, pwd)
         pprint.pprint(wifi)
-
-    def get_wifi(self):
-        wifi = self._client.get_wifi()
-        self._format_key_values(wifi, False)
-
-    def get_firmware(self):
-        firmware = self._client.get_firmware()
-        self._format_key_values(firmware, False)
 
 
 def main():

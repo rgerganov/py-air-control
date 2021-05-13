@@ -205,29 +205,19 @@ class HTTPAirClient(AirClientBase):
             self._get_key()
             return self._get_once(url)
 
-    def get_status(self):
-        url = "http://{}/di/v1/products/1/air".format(self._host)
-        status = self._get(url)
-        status = self._dump_keys(status, None)
-        return status
+    def get_information(self, subset=None):
+        if subset is None:
+            url = "http://{}/di/v1/products/1/air".format(self._host)
+        elif subset == "wifi":
+            url = "http://{}/di/v1/products/0/wifi".format(self._host)
+        elif subset == "firmware":
+            url = "http://{}/di/v1/products/0/firmware".format(self._host)
+        elif subset == "filters":
+            url = "http://{}/di/v1/products/1/fltsts".format(self._host)
 
-    def get_wifi(self):
-        url = "http://{}/di/v1/products/0/wifi".format(self._host)
-        wifi = self._get(url)
-        wifi = self._dump_keys(wifi, "wifi")
-        return wifi
-
-    def get_firmware(self):
-        url = "http://{}/di/v1/products/0/firmware".format(self._host)
-        firmware = self._get(url)
-        firmware = self._dump_keys(firmware, "firmware")
-        return firmware
-
-    def get_filters(self):
-        url = "http://{}/di/v1/products/1/fltsts".format(self._host)
-        filters = self._get(url)
-        filters = self._dump_keys(filters, "filter")
-        return filters
+        info = self._get(url)
+        info = self._dump_keys(info, subset)
+        return info
 
     def pair(self, client_id, client_secret):
         values = {}
