@@ -8,6 +8,7 @@ from coapthon.client.helperclient import HelperClient
 from coapthon.messages.request import Request
 
 from pyairctrl.status_transformer import STATUS_TRANSFORMER
+from pyairctrl.subset_enum import subsetEnum
 
 
 class NotSupportedException(Exception):
@@ -104,7 +105,7 @@ class CoAPAirClientBase(AirClientBase):
         return HelperClient(server=(host, port))
 
     def get_information(self, subset=None):
-        if subset == "wifi":
+        if subset == subsetEnum.wifi:
             raise NotSupportedException(
                 "Getting wifi credentials is currently not supported when using CoAP. Use the app instead."
             )
@@ -114,7 +115,7 @@ class CoAPAirClientBase(AirClientBase):
         return status
 
     def set_values(self, subset, values):
-        if subset == "wifi":
+        if subset == subsetEnum.wifi:
             raise NotSupportedException(
                 "Setting wifi credentials is currently not supported when using CoAP. Use the app instead."
             )

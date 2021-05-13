@@ -14,6 +14,7 @@ from pyairctrl.coap_client import CoAPAirClient
 from pyairctrl.http_client import HTTPAirClient
 from pyairctrl.plain_coap_client import PlainCoAPAirClient
 from pyairctrl.cli_format import CLI_FORMAT
+from pyairctrl.subset_enum import subsetEnum
 
 
 class ClientFactory:
@@ -158,11 +159,11 @@ def main():
 
         subset = None
         if args.wifi or args.wifi_ssid or args.wifi_pwd:
-            subset = "wifi"
+            subset = subsetEnum.wifi
         if args.firmware:
-            subset = "firmware"
+            subset = subsetEnum.firmware
         if args.filters:
-            subset = "filter"
+            subset = subsetEnum.filter
 
         values = {}
         if args.wifi_ssid:

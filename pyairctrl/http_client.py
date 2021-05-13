@@ -16,6 +16,7 @@ from collections import OrderedDict
 from Cryptodome.Cipher import AES
 from Cryptodome.Util.Padding import pad, unpad
 from .base_client import AirClientBase, SetValueException
+from pyairctrl.subset_enum import subsetEnum
 
 G = int(
     "A4D1CBD5C3FD34126765A442EFB99905F8104DD258AC507FD6406CFF14266D31266FEA1E5C41564B777E690F5504F213160217B4B01B886A5E91547F9E2749F4D7FBD7D3B9A92EE1909D0D2263F80A76A6A24C087A091F531DBF0A0169B6A28AD662A4D18E73AFA32D779D5918D08BC8858F4DCEF97C2A24855E6EEB22B3B2E5",
@@ -164,7 +165,7 @@ class HTTPAirClient(AirClientBase):
         self._get(url)
 
     def set_values(self, subset, values):
-        if subset == "wifi":
+        if subset == subsetEnum.wifi:
             self._set_wifi(values)
         else:
             self._set_values(values)
@@ -213,11 +214,11 @@ class HTTPAirClient(AirClientBase):
     def get_information(self, subset=None):
         if subset is None:
             url = "http://{}/di/v1/products/1/air".format(self._host)
-        elif subset == "wifi":
+        elif subset == subsetEnum.wifi:
             url = "http://{}/di/v1/products/0/wifi".format(self._host)
-        elif subset == "firmware":
+        elif subset == subsetEnum.firmware:
             url = "http://{}/di/v1/products/0/firmware".format(self._host)
-        elif subset == "filters":
+        elif subset == subsetEnum.filter:
             url = "http://{}/di/v1/products/1/fltsts".format(self._host)
 
         info = self._get(url)
