@@ -62,5 +62,5 @@ def create_single_set(md_file, single_set):
     md_file.write("{}\n".format(data))
     md_file.write("```\n")
 
-
-test_data()
+if __name__ == "__main__":
+    test_data()
