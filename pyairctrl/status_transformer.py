@@ -158,7 +158,7 @@ STATUS_TRANSFORMER = {
         "rawDescription": None,
         "transformDescription": None,
         "subsets": [subsetEnum.status],
-        "transform": None,
+        "transform": lambda ddp: {'0': 'IAI', '1': 'PM2.5', '2': 'Gas', '3': 'Humidity'}.get(ddp, ddp),
     },
     "wl": {
         "fieldname": "Water level",
