@@ -1,6 +1,7 @@
 import os
 import json
 import pprint
+from pyairctrl.base_client import AirClientBase
 
 
 def test_data():
@@ -37,11 +38,29 @@ def create_single_set(md_file, single_set):
         md_file.write("- {}\n".format(execute))
 
     md_file.write("\nOutput:\n\n")
-    md_file.write("{}\n".format(replace_line_breaks(single_set["data"])))
+    md_file.write("```\n")
 
+    if "output" in single_set:
+        data = single_set["output"]
+        hasOutput=True
+    else: 
+        data = single_set["input"]
+        hasOutput=False
 
-def replace_line_breaks(current_string):
-    return current_string.replace("\n", "<br/>\n")
+    try:
+        data=json.loads(data)
+        isJson=True
+    except ValueError:
+        isJson=False
+
+    if not hasOutput and isJson:
+        data = AirClientBase._dump_keys(data, None)
+
+    if isJson:
+        data=json.dumps(data, indent=4)
+
+    md_file.write("{}\n".format(data))
+    md_file.write("```\n")
 
 
 test_data()

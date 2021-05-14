@@ -5,7 +5,7 @@
             "info": "Status",
             "execute": [
                 "get_information()",
-                "set_status()"
+                "set_values()"
             ],
             "input": "{\"aqil\": 100, \"aqit\": 0, \"cl\": false, \"ddp\": \"1\", \"dt\": 0, \"dtrs\": 0, \"err\": 0, \"func\": \"P\", \"iaql\": 2, \"mode\": \"M\", \"om\": \"1\", \"pm25\": 8, \"pwr\": \"1\", \"rddp\": \"1\", \"rh\": 30, \"rhset\": 60, \"temp\": 24, \"uil\": \"1\", \"wl\": 100}",
             "output": "{\"aqil\": {\"name\": \"Light brightness\", \"raw\": 100, \"value\": 100, \"subsets\": [\"status\"], \"rawDescription\": null, \"valueDescription\": null}, \"aqit\": {\"name\": \"Air quality notification threshold\", \"raw\": 0, \"value\": 0, \"subsets\": [\"status\"], \"rawDescription\": null, \"valueDescription\": null}, \"cl\": {\"name\": \"Child lock\", \"raw\": false, \"value\": false, \"subsets\": [\"status\"], \"rawDescription\": null, \"valueDescription\": null}, \"ddp\": {\"name\": \"Used index\", \"raw\": \"1\", \"value\": \"PM2.5\", \"subsets\": [\"status\"], \"rawDescription\": null, \"valueDescription\": null}, \"dt\": {\"name\": \"Timer\", \"raw\": 0, \"value\": null, \"subsets\": [\"status\"], \"rawDescription\": \"in h\", \"valueDescription\": \"in h - only if >0\"}, \"dtrs\": {\"name\": \"Timer left\", \"raw\": 0, \"value\": null, \"subsets\": [\"status\"], \"rawDescription\": \"in minutes\", \"valueDescription\": \"in minutes - only if >0\"}, \"err\": {\"name\": \"Error\", \"raw\": 0, \"value\": null, \"subsets\": [\"status\"], \"rawDescription\": null, \"valueDescription\": \"None, if err = 0\"}, \"func\": {\"name\": \"Function\", \"raw\": \"P\", \"value\": \"Purification\", \"subsets\": [\"status\"], \"rawDescription\": null, \"valueDescription\": null}, \"iaql\": {\"name\": \"Allergen index\", \"raw\": 2, \"value\": 2, \"subsets\": [\"status\"], \"rawDescription\": null, \"valueDescription\": null}, \"mode\": {\"name\": \"Mode\", \"raw\": \"M\", \"value\": \"manual\", \"subsets\": [\"status\"], \"rawDescription\": null, \"valueDescription\": null}, \"om\": {\"name\": \"Fan speed\", \"raw\": \"1\", \"value\": \"1\", \"subsets\": [\"status\"], \"rawDescription\": null, \"valueDescription\": null}, \"pm25\": {\"name\": \"PM25\", \"raw\": 8, \"value\": 8, \"subsets\": [\"status\"], \"rawDescription\": null, \"valueDescription\": null}, \"pwr\": {\"name\": \"Power\", \"raw\": \"1\", \"value\": \"ON\", \"subsets\": [\"status\"], \"rawDescription\": null, \"valueDescription\": null}, \"rddp\": {\"name\": null, \"raw\": \"1\", \"value\": \"1\", \"subsets\": null, \"rawDescription\": null, \"valueDescription\": null}, \"rh\": {\"name\": \"Humidity\", \"raw\": 30, \"value\": 30, \"subsets\": [\"status\"], \"rawDescription\": null, \"valueDescription\": null}, \"rhset\": {\"name\": \"Target humidity\", \"raw\": 60, \"value\": 60, \"subsets\": [\"status\"], \"rawDescription\": null, \"valueDescription\": null}, \"temp\": {\"name\": \"Temperature\", \"raw\": 24, \"value\": 24, \"subsets\": [\"status\"], \"rawDescription\": null, \"valueDescription\": null}, \"uil\": {\"name\": \"Buttons light\", \"raw\": \"1\", \"value\": \"ON\", \"subsets\": [\"status\"], \"rawDescription\": null, \"valueDescription\": null}, \"wl\": {\"name\": \"Water level\", \"raw\": 100, \"value\": 100, \"subsets\": [\"status\"], \"rawDescription\": null, \"valueDescription\": null}}"
@@ -22,7 +22,7 @@
             "device": "AC2729/10",
             "info": "Wifi-information",
             "execute": [
-                "get_wifi()"
+                "get_information(subsetEnum.wifi)"
             ],
             "input": "{\"cppid\": \"0000000000000000\", \"dhcp\": true, \"gateway\": \"127.0.0.1\", \"ipaddress\": \"127.0.0.2\", \"macaddress\": \"00:00:00:00:00:00\", \"netmask\": \"255.255.255.0\", \"password\": \"xxx\", \"protection\": \"wpa-2\", \"ssid\": \"My SSID\"}",
             "output": "{\"cppid\": {\"name\": \"Device ID\", \"raw\": \"0000000000000000\", \"value\": \"0000000000000000\", \"subsets\": [\"wifi\"], \"rawDescription\": null, \"valueDescription\": \"None\"}, \"dhcp\": {\"name\": \"DHCP active\", \"raw\": true, \"value\": true, \"subsets\": [\"wifi\"], \"rawDescription\": null, \"valueDescription\": \"None\"}, \"gateway\": {\"name\": \"Gateway Address\", \"raw\": \"127.0.0.1\", \"value\": \"127.0.0.1\", \"subsets\": [\"wifi\"], \"rawDescription\": null, \"valueDescription\": \"None\"}, \"ipaddress\": {\"name\": \"IP Address\", \"raw\": \"127.0.0.2\", \"value\": \"127.0.0.2\", \"subsets\": [\"wifi\"], \"rawDescription\": null, \"valueDescription\": \"None\"}, \"macaddress\": {\"name\": \"Mac Address\", \"raw\": \"00:00:00:00:00:00\", \"value\": \"00:00:00:00:00:00\", \"subsets\": [\"wifi\"], \"rawDescription\": null, \"valueDescription\": \"None\"}, \"netmask\": {\"name\": \"Netmask\", \"raw\": \"255.255.255.0\", \"value\": \"255.255.255.0\", \"subsets\": [\"wifi\"], \"rawDescription\": null, \"valueDescription\": \"None\"}, \"password\": {\"name\": \"Password\", \"raw\": \"xxx\", \"value\": \"xxx\", \"subsets\": [\"wifi\"], \"rawDescription\": null, \"valueDescription\": \"None\"}, \"protection\": {\"name\": \"Protection level\", \"raw\": \"wpa-2\", \"value\": \"wpa-2\", \"subsets\": [\"wifi\"], \"rawDescription\": null, \"valueDescription\": \"None\"}, \"ssid\": {\"name\": \"SSID\", \"raw\": \"My SSID\", \"value\": \"My SSID\", \"subsets\": [\"wifi\"], \"rawDescription\": null, \"valueDescription\": \"None\"}}"
@@ -39,7 +39,7 @@
             "device": "AC2729/10",
             "info": "Firmware-information",
             "execute": [
-                "get_firmware()"
+                "get_information(subsetEnum.firmware)"
             ],
             "input": "{\"mandatory\": false, \"name\": \"AC2729_10\", \"progress\": 0, \"state\": \"idle\", \"statusmsg\": \"\", \"upgrade\": \"\", \"version\": \"8\"}",
             "output": "{\"mandatory\": {\"name\": \"Mandatory\", \"raw\": false, \"value\": false, \"subsets\": [\"firmware\"], \"rawDescription\": null, \"valueDescription\": \"None\"}, \"name\": {\"name\": \"Name\", \"raw\": \"AC2729_10\", \"value\": \"AC2729_10\", \"subsets\": [\"status\", \"firmware\"], \"rawDescription\": null, \"valueDescription\": null}, \"progress\": {\"name\": \"Firmware progress\", \"raw\": 0, \"value\": 0, \"subsets\": [\"firmware\"], \"rawDescription\": null, \"valueDescription\": \"None\"}, \"state\": {\"name\": \"Firmware state\", \"raw\": \"idle\", \"value\": \"idle\", \"subsets\": [\"firmware\"], \"rawDescription\": null, \"valueDescription\": \"None\"}, \"statusmsg\": {\"name\": \"Firmware message\", \"raw\": \"\", \"value\": \"\", \"subsets\": [\"firmware\"], \"rawDescription\": null, \"valueDescription\": \"None\"}, \"upgrade\": {\"name\": \"Firmware upgrade\", \"raw\": \"\", \"value\": \"\", \"subsets\": [\"firmware\"], \"rawDescription\": null, \"valueDescription\": \"None\"}, \"version\": {\"name\": \"Firmware version\", \"raw\": \"8\", \"value\": \"8\", \"subsets\": [\"firmware\"], \"rawDescription\": null, \"valueDescription\": \"None\"}}"
@@ -56,7 +56,7 @@
             "device": "AC2729/10",
             "info": "Filter-information",
             "execute": [
-                "get_filters()"
+                "get_information(subsetEnum.filter)"
             ],
             "input": "{\"fltsts0\": 33, \"fltsts1\": 1141, \"fltsts2\": 1142, \"wicksts\": 1140}",
             "output": "{\"fltsts0\": {\"name\": \"Pre-filter and Wick - replace time\", \"raw\": 33, \"value\": 33, \"subsets\": [\"status\", \"filter\"], \"rawDescription\": \"in h\", \"valueDescription\": \"in h\"}, \"fltsts1\": {\"name\": \"HEPA filter - replace time\", \"raw\": 1141, \"value\": 1141, \"subsets\": [\"status\", \"filter\"], \"rawDescription\": \"in h\", \"valueDescription\": \"in h\"}, \"fltsts2\": {\"name\": \"Active carbon filter - replace time\", \"raw\": 1142, \"value\": 1142, \"subsets\": [\"status\", \"filter\"], \"rawDescription\": \"in h\", \"valueDescription\": \"in h\"}, \"wicksts\": {\"name\": \"Wick filter - replace time\", \"raw\": 1140, \"value\": 1140, \"subsets\": [\"status\", \"filter\"], \"rawDescription\": \"in h\", \"valueDescription\": \"in h\"}}"
@@ -92,19 +92,10 @@
             "device": "AC2729/50",
             "info": "Status",
             "execute": [
-                "get_information()"
+                "get_information(subsetEnum.firmware)"
             ],
             "input": "{\"ConnectType\": \"Localcontrol\", \"DeviceId\": \"00000000000000000000000000000000\", \"ProductId\": \"00000000000000000000000000000001\", \"Runtime\": 227847866, \"StatusType\": \"localcontrol\", \"WifiVersion\": \"AWS_Philips_AIR@54.2\", \"aqil\": 75, \"aqit\": 4, \"cl\": false, \"ddp\": \"0\", \"dt\": 0, \"dtrs\": 0, \"err\": 0, \"fltsts0\": 213, \"fltsts1\": 4364, \"fltsts2\": 10487, \"fltt1\": \"A3\", \"fltt2\": \"none\", \"iaql\": 1, \"mode\": \"A\", \"modelid\": \"http\", \"name\": \"Luftreiniger\", \"om\": \"1\", \"swversion\": \"1.0.7\", \"ota\": \"ck\", \"pm25\": 1, \"pwr\": \"1\", \"type\": \"http\", \"uil\": \"2\", \"wicksts\": \"5\"}",
             "output": "{\"name\": {\"name\": \"Name\", \"raw\": \"Luftreiniger\", \"value\": \"Luftreiniger\", \"subsets\": [\"status\", \"firmware\"], \"rawDescription\": null, \"valueDescription\": null}, \"swversion\": {\"name\": \"Version\", \"raw\": \"1.0.7\", \"value\": \"1.0.7\", \"subsets\": [\"status\", \"firmware\"], \"rawDescription\": null, \"valueDescription\": null}, \"ota\": {\"name\": \"Over the air updates\", \"raw\": \"ck\", \"value\": \"ck\", \"subsets\": [\"status\", \"firmware\"], \"rawDescription\": null, \"valueDescription\": null}}"
-        },
-        "filter": {
-            "device": "AC2729/50",
-            "info": "Status",
-            "execute": [
-                "get_information()"
-            ],
-            "input": "{\"ConnectType\": \"Localcontrol\", \"DeviceId\": \"00000000000000000000000000000000\", \"ProductId\": \"00000000000000000000000000000001\", \"Runtime\": 227847866, \"StatusType\": \"localcontrol\", \"WifiVersion\": \"AWS_Philips_AIR@54.2\", \"aqil\": 75, \"aqit\": 4, \"cl\": false, \"ddp\": \"0\", \"dt\": 0, \"dtrs\": 0, \"err\": 0, \"fltsts0\": 213, \"fltsts1\": 4364, \"fltsts2\": 10487, \"fltt1\": \"A3\", \"fltt2\": \"none\", \"iaql\": 1, \"mode\": \"A\", \"modelid\": \"http\", \"name\": \"Luftreiniger\", \"om\": \"1\", \"swversion\": \"1.0.7\", \"ota\": \"ck\", \"pm25\": 1, \"pwr\": \"1\", \"type\": \"http\", \"uil\": \"2\", \"wicksts\": \"5\"}",
-            "output": "{\"fltsts0\": {\"name\": \"Pre-filter and Wick - replace time\", \"raw\": 213, \"value\": 213, \"subsets\": [\"status\", \"filter\"], \"rawDescription\": \"in h\", \"valueDescription\": \"in h\"}, \"fltsts1\": {\"name\": \"HEPA filter - replace time\", \"raw\": 4364, \"value\": 4364, \"subsets\": [\"status\", \"filter\"], \"rawDescription\": \"in h\", \"valueDescription\": \"in h\"}, \"fltsts2\": {\"name\": \"Active carbon filter - replace time\", \"raw\": 10487, \"value\": 10487, \"subsets\": [\"status\", \"filter\"], \"rawDescription\": \"in h\", \"valueDescription\": \"in h\"}, \"wicksts\": {\"name\": \"Wick filter - replace time\", \"raw\": \"5\", \"value\": \"5\", \"subsets\": [\"status\", \"filter\"], \"rawDescription\": \"in h\", \"valueDescription\": \"in h\"}}"
         },
         "firmware-cli": {
             "device": "AC2729/50",
@@ -113,6 +104,15 @@
                 "airctrl --protocol plain_coap --firmware"
             ],
             "output": "[name]                        Name: Luftreiniger\n[swversion]                   Version: 1.0.7\n[ota]                         Over the air updates: ck\n"
+        },
+        "filter": {
+            "device": "AC2729/50",
+            "info": "Status",
+            "execute": [
+                "get_information(subsetEnum.filter)"
+            ],
+            "input": "{\"ConnectType\": \"Localcontrol\", \"DeviceId\": \"00000000000000000000000000000000\", \"ProductId\": \"00000000000000000000000000000001\", \"Runtime\": 227847866, \"StatusType\": \"localcontrol\", \"WifiVersion\": \"AWS_Philips_AIR@54.2\", \"aqil\": 75, \"aqit\": 4, \"cl\": false, \"ddp\": \"0\", \"dt\": 0, \"dtrs\": 0, \"err\": 0, \"fltsts0\": 213, \"fltsts1\": 4364, \"fltsts2\": 10487, \"fltt1\": \"A3\", \"fltt2\": \"none\", \"iaql\": 1, \"mode\": \"A\", \"modelid\": \"http\", \"name\": \"Luftreiniger\", \"om\": \"1\", \"swversion\": \"1.0.7\", \"ota\": \"ck\", \"pm25\": 1, \"pwr\": \"1\", \"type\": \"http\", \"uil\": \"2\", \"wicksts\": \"5\"}",
+            "output": "{\"fltsts0\": {\"name\": \"Pre-filter and Wick - replace time\", \"raw\": 213, \"value\": 213, \"subsets\": [\"status\", \"filter\"], \"rawDescription\": \"in h\", \"valueDescription\": \"in h\"}, \"fltsts1\": {\"name\": \"HEPA filter - replace time\", \"raw\": 4364, \"value\": 4364, \"subsets\": [\"status\", \"filter\"], \"rawDescription\": \"in h\", \"valueDescription\": \"in h\"}, \"fltsts2\": {\"name\": \"Active carbon filter - replace time\", \"raw\": 10487, \"value\": 10487, \"subsets\": [\"status\", \"filter\"], \"rawDescription\": \"in h\", \"valueDescription\": \"in h\"}, \"wicksts\": {\"name\": \"Wick filter - replace time\", \"raw\": \"5\", \"value\": \"5\", \"subsets\": [\"status\", \"filter\"], \"rawDescription\": \"in h\", \"valueDescription\": \"in h\"}}"
         },
         "filter-cli": {
             "device": "AC2729/50",
@@ -162,7 +162,7 @@
             "device": "AC2889/10",
             "info": "Status",
             "execute": [
-                "get_information(subsetEnum.firmware)"
+                "get_information(subsetEnum.filter)"
             ],
             "input": "{\"ConnectType\":\"Localcontrol\",\"DeviceId\":\"00000000000000000000000000000000\",\"ProductId\":\"00000000000000000000000000000001\",\"Runtime\":133558623,\"StatusType\":\"localcontrol\",\"WifiVersion\":\"AWS_Philips_AIR@54.2\",\"aqil\":25,\"aqit\":4,\"cl\":false,\"ddp\":\"0\",\"dt\":0,\"dtrs\":0,\"err\":0,\"fltsts0\":149,\"fltsts1\":4300,\"fltsts2\":10423,\"fltt1\":\"A3\",\"fltt2\":\"none\",\"iaql\":1,\"mode\":\"M\",\"modelid\":\"AC2889/10\",\"name\":\"Luftreiniger\",\"om\":\"1\",\"swversion\":\"1.0.7\",\"ota\":\"ck\",\"pm25\":1,\"pwr\":\"1\",\"type\":\"AC2889\",\"uil\":\"2\"}",
             "output": "{\"fltsts0\": {\"name\": \"Pre-filter and Wick - replace time\", \"raw\": 149, \"value\": 149, \"subsets\": [\"status\", \"filter\"], \"rawDescription\": \"in h\", \"valueDescription\": \"in h\"}, \"fltsts1\": {\"name\": \"HEPA filter - replace time\", \"raw\": 4300, \"value\": 4300, \"subsets\": [\"status\", \"filter\"], \"rawDescription\": \"in h\", \"valueDescription\": \"in h\"}, \"fltsts2\": {\"name\": \"Active carbon filter - replace time\", \"raw\": 10423, \"value\": 10423, \"subsets\": [\"status\", \"filter\"], \"rawDescription\": \"in h\", \"valueDescription\": \"in h\"}}"
