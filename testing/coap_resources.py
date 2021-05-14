@@ -72,7 +72,7 @@ class StatusResource(EncryptedResourceBase):
             )
 
         response.payload = '{{"state":{{"reported": {} }} }}'.format(
-            self.test_data["coap"][self.dataset]["data"]
+            self.test_data["coap"][self.dataset]["input"]
         )
         response.payload = self._transform_payload_before_sending(response.payload)
         if self.render_callback is not None:

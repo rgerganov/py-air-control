@@ -2,11 +2,13 @@
 
 import os
 import json
+from pyairctrl.base_client import NotSupportedException
 import pytest
 from pyairctrl.coap_client import CoAPAirClient
-from pyairctrl.airctrl import CoAPCli
-from coap_test_server import CoAPTestServer
-from coap_resources import SyncResource, ControlResource, StatusResource
+from pyairctrl.airctrl import ClientFactory
+from testing.coap_test_server import CoAPTestServer
+from testing.coap_resources import SyncResource, ControlResource, StatusResource
+from pyairctrl.subset_enum import subsetEnum
 
 
 class TestCoap:
@@ -16,7 +18,7 @@ class TestCoap:
 
     @pytest.fixture(scope="class")
     def air_cli(self):
-        return CoAPCli("127.0.0.1")
+        return ClientFactory.create("coap", "127.0.0.1", False)
 
     @pytest.fixture(scope="class")
     def test_data(self):
@@ -67,6 +69,19 @@ class TestCoap:
         result = air_client.set_values(values)
         assert result
 
+    def test_set_wifi_isnotsupported(self, air_client):
+        values = {}
+        values["ssid"] = "1234"
+        values["password"] = "5678"
+
+        with pytest.raises(NotSupportedException) as excinfo:
+            result = air_client.set_values(values, subsetEnum.wifi)
+
+        assert (
+            "Setting wifi credentials is currently not supported when using CoAP. Use the app instead."
+            in str(excinfo.value)
+        )
+
     def test_key_is_increased(self, control_resource):
         air_client = CoAPAirClient("127.0.0.1")
         values = {}
@@ -80,18 +95,19 @@ class TestCoap:
     def test_response_is_cut_off_should_return_error(self, status_resource, capfd):
         air_client = CoAPAirClient("127.0.0.1")
         status_resource.set_render_callback(self.cutoff_data)
-        air_client.get_status()
+        air_client.get_information()
         result, err = capfd.readouterr()
         assert "Message from device got corrupted" in result
 
     def cutoff_data(self, data):
         return data[:-8]
 
-    def test_get_status_is_valid(
+    def test_get_information_is_valid(
         self, sync_resource, status_resource, air_client, test_data
     ):
         self.assert_json_data(
-            air_client.get_status,
+            air_client.get_information,
+            None,
             "status",
             test_data,
             air_client,
@@ -99,13 +115,23 @@ class TestCoap:
             status_resource,
         )
 
-    def test_get_status_longsize_is_valid(
+    def test_get_wifi_is_isnotsupported(self, air_client):
+        with pytest.raises(NotSupportedException) as excinfo:
+            air_client.get_information(subsetEnum.wifi)
+
+        assert (
+            "Getting wifi credentials is currently not supported when using CoAP. Use the app instead."
+            in str(excinfo.value)
+        )
+
+    def test_get_information_longsize_is_valid(
         self, sync_resource, status_resource, air_client, test_data
     ):
         dataset = "status-longsize"
         status_resource.set_dataset(dataset)
         self.assert_json_data(
-            air_client.get_status,
+            air_client.get_information,
+            None,
             dataset,
             test_data,
             air_client,
@@ -117,8 +143,9 @@ class TestCoap:
         self, sync_resource, status_resource, air_client, test_data
     ):
         self.assert_json_data(
-            air_client.get_firmware,
-            "status",
+            air_client.get_information,
+            subsetEnum.firmware,
+            "firmware",
             test_data,
             air_client,
             sync_resource,
@@ -129,8 +156,9 @@ class TestCoap:
         self, sync_resource, status_resource, air_client, test_data
     ):
         self.assert_json_data(
-            air_client.get_filters,
-            "status",
+            air_client.get_information,
+            subsetEnum.filter,
+            "filter",
             test_data,
             air_client,
             sync_resource,
@@ -141,7 +169,8 @@ class TestCoap:
         self, sync_resource, status_resource, air_cli, test_data, capfd
     ):
         self.assert_cli_data(
-            air_cli.get_status,
+            air_cli.get_information,
+            None,
             "status-cli",
             test_data,
             air_cli,
@@ -156,7 +185,8 @@ class TestCoap:
         dataset = "status-AC3858"
         status_resource.set_dataset(dataset)
         self.assert_cli_data(
-            air_cli.get_status,
+            air_cli.get_information,
+            None,
             "{}-cli".format(dataset),
             test_data,
             air_cli,
@@ -171,7 +201,8 @@ class TestCoap:
         dataset = "status-err193"
         status_resource.set_dataset(dataset)
         self.assert_cli_data(
-            air_cli.get_status,
+            air_cli.get_information,
+            None,
             "{}-cli".format(dataset),
             test_data,
             air_cli,
@@ -184,7 +215,8 @@ class TestCoap:
         self, sync_resource, status_resource, air_cli, test_data, capfd
     ):
         self.assert_cli_data(
-            air_cli.get_firmware,
+            air_cli.get_information,
+            subsetEnum.firmware,
             "firmware-cli",
             test_data,
             air_cli,
@@ -197,8 +229,9 @@ class TestCoap:
         self, sync_resource, status_resource, air_cli, test_data, capfd
     ):
         self.assert_cli_data(
-            air_cli.get_filters,
-            "fltsts-cli",
+            air_cli.get_information,
+            subsetEnum.filter,
+            "filter-cli",
             test_data,
             air_cli,
             capfd,
@@ -207,16 +240,24 @@ class TestCoap:
         )
 
     def assert_json_data(
-        self, air_func, dataset, test_data, air_client, sync_resource, status_resource
+        self,
+        air_func,
+        subset,
+        dataset,
+        test_data,
+        air_client,
+        sync_resource,
+        status_resource,
     ):
-        result = air_func()
-        data = test_data["coap"][dataset]["data"]
+        result = air_func(subset)
+        data = test_data["coap"][dataset]["output"]
         json_data = json.loads(data)
         assert result == json_data
 
     def assert_cli_data(
         self,
         air_func,
+        subset,
         dataset,
         test_data,
         air_cli,
@@ -224,6 +265,6 @@ class TestCoap:
         sync_resource,
         status_resource,
     ):
-        air_func()
+        air_func(subset)
         result, err = capfd.readouterr()
-        assert result == test_data["coap"][dataset]["data"]
+        assert result == test_data["coap"][dataset]["output"]
