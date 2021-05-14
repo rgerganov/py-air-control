@@ -19,7 +19,7 @@ from pyairctrl.subset_enum import subsetEnum
 
 class ClientFactory:
     def __init__(self, client, debug):
-        self._client: AirClientBase = client
+        self._client = client
         self._debug = debug
 
     @staticmethod
