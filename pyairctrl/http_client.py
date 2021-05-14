@@ -166,9 +166,9 @@ class HTTPAirClient(AirClientBase):
 
     def set_values(self, values, subset=None):
         if subset == subsetEnum.wifi:
-            self._set_wifi(values)
+            return self._set_wifi(values)
         else:
-            self._set_values(values)
+            return self._set_values(values)
 
     def _set_values(self, values):
         try:
@@ -179,7 +179,8 @@ class HTTPAirClient(AirClientBase):
                 resp = response.read()
                 resp = decrypt(resp.decode("ascii"), self._session_key)
                 status = json.loads(resp)
-                return status
+                # TODO what is returned here?
+                return status == '{"status":"success"}'
         except urllib.error.HTTPError as e:
             raise SetValueException(
                 "Error setting values (response code: {})".format(e.code)
@@ -193,7 +194,8 @@ class HTTPAirClient(AirClientBase):
             resp = response.read()
             resp = decrypt(resp.decode("ascii"), self._session_key)
             wifi = json.loads(resp)
-            return wifi
+            # TODO what is returned here?
+            return wifi == '{"status":"success"}'
 
     def _get_once(self, url):
         with urllib.request.urlopen(url) as response:
