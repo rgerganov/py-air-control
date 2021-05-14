@@ -26,7 +26,8 @@ class AirClientBase(ABC):
         self._host = host
         self._debug = debug
 
-    def _get_info_for_key(self, key, raw_value, subset):
+    @classmethod
+    def _get_info_for_key(cls, key, raw_value, subset):
         current_value = raw_value
         subsets = None
         name = None
@@ -58,11 +59,12 @@ class AirClientBase(ABC):
             "valueDescription": valueDescription,
         }
 
-    def _dump_keys(self, status, subset):
+    @classmethod
+    def _dump_keys(cls, status, subset):
         new_status = status.copy()
         for key in status:
             current_value = status[key]
-            name_and_value = self._get_info_for_key(key, current_value, subset)
+            name_and_value = cls._get_info_for_key(key, current_value, subset)
             if name_and_value is None:
                 new_status.pop(key, None)
                 continue
