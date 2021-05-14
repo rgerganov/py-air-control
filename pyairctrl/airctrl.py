@@ -65,11 +65,11 @@ class ClientFactory:
         except NotSupportedException as e:
             print(e)
 
-    def set_values(self, subset, values):
+    def set_values(self, values, subset=None):
         try:
             if self._debug:
                 pprint.pprint(values)
-            values = self._client.set_values(subset, values)
+            values = self._client.set_values(values, subset)
         except (NotSupportedException, SetValueException) as e:
             print(e)
 
@@ -194,7 +194,7 @@ def main():
                 values["cl"] = args.cl == "True"
 
         if values:
-            c.set_values(subset, values)
+            c.set_values(values, subset)
 
         c.get_information(subset)
 

@@ -75,7 +75,7 @@ class AirClientBase(ABC):
         pass
 
     @abstractmethod
-    def set_values(self, subset, values):
+    def set_values(self, values, subset=None):
         pass
 
     @classmethod
@@ -114,7 +114,7 @@ class CoAPAirClientBase(AirClientBase):
         status = self._dump_keys(status, subset)
         return status
 
-    def set_values(self, subset, values):
+    def set_values(self, values, subset=None):
         if subset == subsetEnum.wifi:
             raise NotSupportedException(
                 "Setting wifi credentials is currently not supported when using CoAP. Use the app instead."

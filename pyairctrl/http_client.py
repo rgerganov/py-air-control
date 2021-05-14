@@ -164,7 +164,7 @@ class HTTPAirClient(AirClientBase):
         url = "http://{}/di/v1/products/1/air".format(self._host)
         self._get(url)
 
-    def set_values(self, subset, values):
+    def set_values(self, values, subset=None):
         if subset == subsetEnum.wifi:
             self._set_wifi(values)
         else:
