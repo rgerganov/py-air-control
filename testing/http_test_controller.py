@@ -102,10 +102,10 @@ class HttpTestController:
         return self._callback_get_data("firmware")
 
     def get_filters(self):
-        return self._callback_get_data("fltsts")
+        return self._callback_get_data("filter")
 
     def _callback_get_data(self, dataset):
-        data = self._test_data["http"][dataset]["data"]
+        data = self._test_data["http"][dataset]["input"]
         json_data = json.loads(data, object_pairs_hook=OrderedDict)
         _encrypted_data = self._padding_encrypt(
             json_data, bytes(self._device_key.encode("ascii"))
@@ -119,13 +119,11 @@ class HttpTestController:
         )
 
         if data != json.loads(valid_data):
-            json_data = json.loads("{}")
+            status_data = '{"status":"failed"}'
         else:
-            dataset = self._urlMapping[flask.request.url]
-            status_data = self._test_data["http"][dataset]["data"]
-            json_data = json.loads(status_data)
+            status_data = '{"status":"success"}'
 
         _encrypted_data = self._padding_encrypt(
-            json_data, bytes(self._device_key.encode("ascii"))
+            status_data, bytes(self._device_key.encode("ascii"))
         )
         return _encrypted_data

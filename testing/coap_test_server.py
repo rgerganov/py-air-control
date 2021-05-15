@@ -42,23 +42,7 @@ class CoAPTestServer:
 
     def add_url_rule(self, path, resource):
         assert isinstance(resource, Resource)
-        path = path.strip("/")
-        paths = path.split("/")
-        actual_path = ""
-        i = 0
-        for p in paths:
-            i += 1
-            actual_path += "/" + p
-            try:
-                res = self.coap_server.root[actual_path]
-            except KeyError:
-                res = None
-            if res is None:
-                resource.path = actual_path
-                self.coap_server.root[actual_path] = resource
-
-        # TODO: Code can be removed after Coapthon3 > 1.01 is ready and imported, add code below instead
-        # self.coap_server.add_resource(rule, resource)
+        self.coap_server.add_resource(path, resource)
 
 
 class CoapTestResource(Resource):

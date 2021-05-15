@@ -15,6 +15,8 @@ import xml.etree.ElementTree as ET
 from collections import OrderedDict
 from Cryptodome.Cipher import AES
 from Cryptodome.Util.Padding import pad, unpad
+from .base_client import AirClientBase, SetValueException
+from pyairctrl.subset_enum import subsetEnum
 
 G = int(
     "A4D1CBD5C3FD34126765A442EFB99905F8104DD258AC507FD6406CFF14266D31266FEA1E5C41564B777E690F5504F213160217B4B01B886A5E91547F9E2749F4D7FBD7D3B9A92EE1909D0D2263F80A76A6A24C087A091F531DBF0A0169B6A28AD662A4D18E73AFA32D779D5918D08BC8858F4DCEF97C2A24855E6EEB22B3B2E5",
@@ -50,9 +52,9 @@ def decrypt(data, key):
     return response.decode("ascii")
 
 
-class HTTPAirClient:
-    @staticmethod
-    def ssdp(timeout=1, repeats=3):
+class HTTPAirClient(AirClientBase):
+    @classmethod
+    def get_devices(cls, timeout=1, repeats=3):
         addr = "239.255.255.250"
         port = 1900
         msg = "\r\n".join(
@@ -105,9 +107,8 @@ class HTTPAirClient:
         return resp
 
     def __init__(self, host, debug=False):
-        self._host = host
+        super().__init__(host, debug)
         self._session_key = None
-        self._debug = debug
         self.load_key()
 
     def _get_key(self):
@@ -163,23 +164,29 @@ class HTTPAirClient:
         url = "http://{}/di/v1/products/1/air".format(self._host)
         self._get(url)
 
-    def set_values(self, values):
-        body = encrypt(values, self._session_key)
-        url = "http://{}/di/v1/products/1/air".format(self._host)
-        req = urllib.request.Request(url=url, data=body, method="PUT")
-        with urllib.request.urlopen(req) as response:
-            resp = response.read()
-            resp = decrypt(resp.decode("ascii"), self._session_key)
-            status = json.loads(resp)
-            return status
+    def set_values(self, values, subset=None):
+        if subset == subsetEnum.wifi:
+            return self._set_wifi(values)
+        else:
+            return self._set_values(values)
 
-    def set_wifi(self, ssid, pwd):
-        values = {}
-        if ssid:
-            values["ssid"] = ssid
-        if pwd:
-            values["password"] = pwd
+    def _set_values(self, values):
+        try:
+            body = encrypt(values, self._session_key)
+            url = "http://{}/di/v1/products/1/air".format(self._host)
+            req = urllib.request.Request(url=url, data=body, method="PUT")
+            with urllib.request.urlopen(req) as response:
+                resp = response.read()
+                resp = decrypt(resp.decode("ascii"), self._session_key)
+                status = json.loads(resp)
+                # TODO what is returned here?
+                return status == '{"status":"success"}'
+        except urllib.error.HTTPError as e:
+            raise SetValueException(
+                "Error setting values (response code: {})".format(e.code)
+            )
 
+    def _set_wifi(self, values):
         body = encrypt(values, self._session_key)
         url = "http://{}/di/v1/products/0/wifi".format(self._host)
         req = urllib.request.Request(url=url, data=body, method="PUT")
@@ -187,7 +194,8 @@ class HTTPAirClient:
             resp = response.read()
             resp = decrypt(resp.decode("ascii"), self._session_key)
             wifi = json.loads(resp)
-            return wifi
+            # TODO what is returned here?
+            return wifi == '{"status":"success"}'
 
     def _get_once(self, url):
         with urllib.request.urlopen(url) as response:
@@ -205,25 +213,19 @@ class HTTPAirClient:
             self._get_key()
             return self._get_once(url)
 
-    def get_status(self, debug=False):
-        url = "http://{}/di/v1/products/1/air".format(self._host)
-        status = self._get(url)
-        return status
+    def get_information(self, subset=None):
+        if subset is None:
+            url = "http://{}/di/v1/products/1/air".format(self._host)
+        elif subset == subsetEnum.wifi:
+            url = "http://{}/di/v1/products/0/wifi".format(self._host)
+        elif subset == subsetEnum.firmware:
+            url = "http://{}/di/v1/products/0/firmware".format(self._host)
+        elif subset == subsetEnum.filter:
+            url = "http://{}/di/v1/products/1/fltsts".format(self._host)
 
-    def get_wifi(self):
-        url = "http://{}/di/v1/products/0/wifi".format(self._host)
-        wifi = self._get(url)
-        return wifi
-
-    def get_firmware(self):
-        url = "http://{}/di/v1/products/0/firmware".format(self._host)
-        firmware = self._get(url)
-        return firmware
-
-    def get_filters(self):
-        url = "http://{}/di/v1/products/1/fltsts".format(self._host)
-        filters = self._get(url)
-        return filters
+        info = self._get(url)
+        info = self._dump_keys(info, subset)
+        return info
 
     def pair(self, client_id, client_secret):
         values = {}

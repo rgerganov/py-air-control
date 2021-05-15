@@ -4,9 +4,10 @@ import os
 import json
 import pytest
 from pyairctrl.http_client import HTTPAirClient
-from pyairctrl.airctrl import HTTPAirCli
-from http_test_server import HttpTestServer
-from http_test_controller import HttpTestController
+from pyairctrl.airctrl import ClientFactory
+from testing.http_test_server import HttpTestServer
+from testing.http_test_controller import HttpTestController
+from pyairctrl.subset_enum import subsetEnum
 
 
 class TestHTTP:
@@ -18,7 +19,7 @@ class TestHTTP:
 
     @pytest.fixture(scope="class")
     def air_cli(self):
-        return HTTPAirCli("127.0.0.1")
+        return ClientFactory.create("http", "127.0.0.1", False)
 
     @pytest.fixture(scope="class")
     def test_data(self):
@@ -41,7 +42,9 @@ class TestHTTP:
             "/di/v1/products/0/security", view_func=controller.security, methods=["PUT"]
         )
         self.httpServer.add_url_rule(
-            "/di/v1/products/1/air", view_func=controller.get_status, methods=["GET"]
+            "/di/v1/products/1/air",
+            view_func=controller.get_status,
+            methods=["GET"],
         )
         self.httpServer.add_url_rule(
             "/di/v1/products/1/air", view_func=controller.set_status, methods=["PUT"]
@@ -74,51 +77,69 @@ class TestHTTP:
         current_key = air_client.load_key()
         assert current_key.decode("ascii") == self.device_key
 
-    def test_set_values(self, air_client, test_data):
+    def test_set_values(self, air_client):
         values = {}
         values["mode"] = "A"
         result = air_client.set_values(values)
-        data = test_data["http"]["status"]["data"]
-        json_data = json.loads(data)
-        assert result == json_data
+        assert result
 
-    def test_set_wifi(self, air_client, test_data):
-        result = air_client.set_wifi("1234", "5678")
-        data = test_data["http"]["wifi"]["data"]
-        json_data = json.loads(data)
-        assert result == json_data
+    def test_set_wifi(self, air_client):
+        values = {}
+        values["ssid"] = "1234"
+        values["password"] = "5678"
 
-    def test_get_status_is_valid(self, air_client, test_data, controller):
-        self.assert_json_data(air_client.get_status, "status", test_data)
+        result = air_client.set_values(values, subsetEnum.wifi)
+        assert result
+
+    def test_get_information_is_valid(self, air_client, test_data, controller):
+        self.assert_json_data(air_client.get_information, None, "status", test_data)
 
     def test_get_wifi_is_valid(self, air_client, test_data):
-        self.assert_json_data(air_client.get_wifi, "wifi", test_data)
+        self.assert_json_data(
+            air_client.get_information, subsetEnum.wifi, "wifi", test_data
+        )
 
     def test_get_firmware_is_valid(self, air_client, test_data):
-        self.assert_json_data(air_client.get_firmware, "firmware", test_data)
+        self.assert_json_data(
+            air_client.get_information, subsetEnum.firmware, "firmware", test_data
+        )
 
     def test_get_filters_is_valid(self, air_client, test_data):
-        self.assert_json_data(air_client.get_filters, "fltsts", test_data)
+        self.assert_json_data(
+            air_client.get_information, subsetEnum.filter, "filter", test_data
+        )
 
     def test_get_cli_status_is_valid(self, air_cli, test_data, capfd):
-        self.assert_cli_data(air_cli.get_status, "status-cli", test_data, capfd)
+        self.assert_cli_data(
+            air_cli.get_information, None, "status-cli", test_data, capfd
+        )
 
     def test_get_cli_wifi_is_valid(self, air_cli, test_data, capfd):
-        self.assert_cli_data(air_cli.get_wifi, "wifi-cli", test_data, capfd)
+        self.assert_cli_data(
+            air_cli.get_information, subsetEnum.wifi, "wifi-cli", test_data, capfd
+        )
 
     def test_get_cli_firmware_is_valid(self, air_cli, test_data, capfd):
-        self.assert_cli_data(air_cli.get_firmware, "firmware-cli", test_data, capfd)
+        self.assert_cli_data(
+            air_cli.get_information,
+            subsetEnum.firmware,
+            "firmware-cli",
+            test_data,
+            capfd,
+        )
 
     def test_get_cli_filters_is_valid(self, air_cli, test_data, capfd):
-        self.assert_cli_data(air_cli.get_filters, "fltsts-cli", test_data, capfd)
+        self.assert_cli_data(
+            air_cli.get_information, subsetEnum.filter, "filter-cli", test_data, capfd
+        )
 
-    def assert_json_data(self, air_func, dataset, test_data):
-        result = air_func()
-        data = test_data["http"][dataset]["data"]
+    def assert_json_data(self, air_func, subset, dataset, test_data):
+        result = air_func(subset)
+        data = test_data["http"][dataset]["output"]
         json_data = json.loads(data)
         assert result == json_data
 
-    def assert_cli_data(self, air_func, dataset, test_data, capfd):
-        air_func()
+    def assert_cli_data(self, air_func, subset, dataset, test_data, capfd):
+        air_func(subset)
         result, err = capfd.readouterr()
-        assert result == test_data["http"][dataset]["data"]
+        assert result == test_data["http"][dataset]["output"]

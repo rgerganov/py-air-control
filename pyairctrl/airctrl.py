@@ -3,136 +3,109 @@
 import argparse
 import sys
 import pprint
+import json
 
-from pyairctrl.status_transformer import STATUS_TRANSFORMER
+from pyairctrl.base_client import (
+    NotSupportedException,
+    SetValueException,
+    AirClientBase,
+)
 from pyairctrl.coap_client import CoAPAirClient
 from pyairctrl.http_client import HTTPAirClient
 from pyairctrl.plain_coap_client import PlainCoAPAirClient
+from pyairctrl.cli_format import CLI_FORMAT
+from pyairctrl.subset_enum import subsetEnum
 
 
-class CliBase:
-    def __init__(self, client):
+class ClientFactory:
+    def __init__(self, client, debug):
         self._client = client
+        self._debug = debug
 
-    def _dump_keys(self, status, subset, printKey):
+    @staticmethod
+    def _format_key_values(status):
         for key in status:
-            current_value = status[key]
-            name_and_value = self._get_info_for_key(key, current_value, subset)
-            if name_and_value is None:
+            if status[key]["value"] is None:
                 continue
 
-            prefix = "[{key}]\t".format(key=key) if printKey else ""
+            name_and_value = ClientFactory._get_name_for_key(key, status[key])
+
+            prefix = "[{key}]\t".format(key=key)
             print(
                 "{prefix}{name_and_value}".format(
                     prefix=prefix, name_and_value=name_and_value
                 ).expandtabs(30)
             )
 
-    def get_status(self, debug=False):
-        status = self._client.get_status(debug)
-        if status is None:
-            print("No info found")
-            return
-
-        if debug:
-            print("Raw status:")
-            pprint.pprint(status)
-        self._dump_keys(status, None, True)
-
-    def set_values(self, values, debug=False):
-        try:
-            values = self._client.set_values(values)
-        except urllib.error.HTTPError as e:
-            print("Error setting values (response code: {})".format(e.code))
-
-    def _get_info_for_key(self, key, current_value, subset):
-        if key in STATUS_TRANSFORMER:
-            info = STATUS_TRANSFORMER[key]
-            if not subset is None and subset != info[1]:
-                return None
-
-            if not info[2] is None:
-                current_value = info[2](current_value)
-                if current_value is None:
-                    return None
-            return info[0].format(current_value)
-        else:
-            if not subset is None:
-                return None
-
-        return "{}: {}".format(key, current_value)
-
-    def get_filters(self):
-        status = self._client.get_filters()
-        if status is None:
-            print("No filter-info found")
-            return
-
-        self._dump_keys(status, "filter", False)
-
-    def get_firmware(self):
-        status = self._client.get_firmware()
-        if status is None:
-            print("No firmware-info found")
-            return
-
-        self._dump_keys(status, "firmware", False)
-
-
-class CoAPCliBase(CliBase):
-    def __init__(self, client):
-        super().__init__(client)
-
-    def get_wifi(self):
-        print(
-            "Getting wifi credentials is currently not supported when using CoAP. Use the app instead."
-        )
-
-    def set_wifi(self, ssid, pwd):
-        print(
-            "Setting wifi credentials is currently not supported when using CoAP. Use the app instead."
-        )
-
-
-class CoAPCli(CoAPCliBase):
-    def __init__(self, host, port=5683, debug=False):
-        super().__init__(CoAPAirClient(host, port, debug))
-
-
-class PlainCoAPAirCli(CoAPCliBase):
-    def __init__(self, host, port=5683):
-        super().__init__(PlainCoAPAirClient(host, port))
-
-
-class HTTPAirCli(CliBase):
     @staticmethod
-    def ssdp(timeout=1, repeats=3, debug=False):
-        response = HTTPAirClient.ssdp(timeout, repeats)
-        if debug:
-            pprint.pprint(response)
-        return response
+    def _get_name_for_key(key, singleEntry):
+        formatter = (
+            CLI_FORMAT[key]["format"]
+            if key in CLI_FORMAT
+            else "{name}: {{}}".format(name=singleEntry["name"])
+            if not singleEntry["name"] is None
+            else "{name}: {{}}".format(name=key)
+        )
+        return formatter.format(singleEntry["value"])
 
-    def __init__(self, host, debug=True):
-        super().__init__(HTTPAirClient(host, debug))
+    def get_information(self, subset=None):
+        try:
+            status = self._client.get_information(subset)
+            if status is None:
+                noneInfo = (
+                    "info" if subset is None else "{subset}-info".format(subset=subset)
+                )
+                print("No {noneInfo} found".format(noneInfo=noneInfo))
+                return
 
-    def set_wifi(self, ssid, pwd):
-        values = {}
-        if ssid:
-            values["ssid"] = ssid
-        if pwd:
-            values["password"] = pwd
-        pprint.pprint(values)
+            if self._debug:
+                print("Raw status:")
+                print(json.dumps(status, indent=4))
+            self._format_key_values(status)
+        except NotSupportedException as e:
+            print(e)
 
-        wifi = self._client.set_wifi(ssid, pwd)
-        pprint.pprint(wifi)
+    def set_values(self, values, subset=None):
+        try:
+            if self._debug:
+                pprint.pprint(values)
+            values = self._client.set_values(values, subset)
+        except (NotSupportedException, SetValueException) as e:
+            print(e)
 
-    def get_wifi(self):
-        wifi = self._client.get_wifi()
-        self._dump_keys(wifi, None, False)
+    @classmethod
+    def get_devices(cls, protocol, ipaddr, debug):
+        if ipaddr:
+            return [{"ip": ipaddr}]
 
-    def get_firmware(self):
-        firmware = self._client.get_firmware()
-        self._dump_keys(firmware, None, False)
+        try:
+            client = cls.get_client_class(protocol)
+            devices = client.get_devices(debug)
+            if debug:
+                pprint.pprint(devices)
+            if not devices:
+                print(
+                    "Air purifier not autodetected. Try --ipaddr option to force specific IP address."
+                )
+                sys.exit(1)
+            return devices
+        except NotSupportedException as e:
+            print(e)
+            sys.exit(1)
+
+    @classmethod
+    def get_client_class(cls, protocol):
+        if protocol == "http":
+            return HTTPAirClient
+        elif protocol == "plain_coap":
+            return PlainCoAPAirClient
+        elif protocol == "coap":
+            return CoAPAirClient
+
+    @classmethod
+    def create(cls, protocol, host, debug):
+        client = cls.get_client_class(protocol)
+        return cls(client(host, debug=debug), debug)
 
 
 def main():
@@ -180,69 +153,50 @@ def main():
     parser.add_argument("--filters", help="read filters status", action="store_true")
     args = parser.parse_args()
 
-    if args.ipaddr:
-        devices = [{"ip": args.ipaddr}]
-    else:
-        if args.protocol in ["coap", "plain_coap"]:
-            print(
-                "Autodetection is not supported when using CoAP. Use --ipaddr to set an IP address."
-            )
-            sys.exit(1)
-
-        devices = HTTPAirCli.ssdp(debug=args.debug)
-        if not devices:
-            print(
-                "Air purifier not autodetected. Try --ipaddr option to force specific IP address."
-            )
-            sys.exit(1)
-
+    devices = ClientFactory.get_devices(args.protocol, args.ipaddr, debug=args.debug)
     for device in devices:
-        if args.protocol == "http":
-            c = HTTPAirCli(device["ip"])
-        elif args.protocol == "plain_coap":
-            c = PlainCoAPAirCli(device["ip"])
-        elif args.protocol == "coap":
-            c = CoAPCli(device["ip"], debug=args.debug)
+        c = ClientFactory.create(args.protocol, device["ip"], debug=args.debug)
 
-        if args.wifi:
-            c.get_wifi()
-            sys.exit(0)
+        subset = None
+        if args.wifi or args.wifi_ssid or args.wifi_pwd:
+            subset = subsetEnum.wifi
         if args.firmware:
-            c.get_firmware()
-            sys.exit(0)
-        if args.wifi_ssid or args.wifi_pwd:
-            c.set_wifi(args.wifi_ssid, args.wifi_pwd)
-            sys.exit(0)
+            subset = subsetEnum.firmware
         if args.filters:
-            c.get_filters()
-            sys.exit(0)
+            subset = subsetEnum.filter
 
         values = {}
-        if args.om:
-            values["om"] = args.om
-        if args.pwr:
-            values["pwr"] = args.pwr
-        if args.mode:
-            values["mode"] = args.mode
-        if args.rhset:
-            values["rhset"] = int(args.rhset)
-        if args.func:
-            values["func"] = args.func
-        if args.aqil:
-            values["aqil"] = int(args.aqil)
-        if args.ddp:
-            values["ddp"] = args.ddp
-        if args.uil:
-            values["uil"] = args.uil
-        if args.dt:
-            values["dt"] = int(args.dt)
-        if args.cl:
-            values["cl"] = args.cl == "True"
+        if args.wifi_ssid:
+            values["ssid"] = args.wifi_ssid
+        if args.wifi_pwd:
+            values["password"] = args.wifi_pwd
+
+        if subset is None:
+            if args.om:
+                values["om"] = args.om
+            if args.pwr:
+                values["pwr"] = args.pwr
+            if args.mode:
+                values["mode"] = args.mode
+            if args.rhset:
+                values["rhset"] = int(args.rhset)
+            if args.func:
+                values["func"] = args.func
+            if args.aqil:
+                values["aqil"] = int(args.aqil)
+            if args.ddp:
+                values["ddp"] = args.ddp
+            if args.uil:
+                values["uil"] = args.uil
+            if args.dt:
+                values["dt"] = int(args.dt)
+            if args.cl:
+                values["cl"] = args.cl == "True"
 
         if values:
-            c.set_values(values, debug=args.debug)
-        else:
-            c.get_status(debug=args.debug)
+            c.set_values(values, subset)
+
+        c.get_information(subset)
 
 
 if __name__ == "__main__":
