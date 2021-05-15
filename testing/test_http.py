@@ -135,7 +135,6 @@ class TestHTTP:
 
     def assert_json_data(self, air_func, subset, dataset, test_data):
         result = air_func(subset)
-        print(json.dumps(result))
         data = test_data["http"][dataset]["output"]
         json_data = json.loads(data)
         assert result == json_data
@@ -143,5 +142,4 @@ class TestHTTP:
     def assert_cli_data(self, air_func, subset, dataset, test_data, capfd):
         air_func(subset)
         result, err = capfd.readouterr()
-        print(result)
         assert result == test_data["http"][dataset]["output"]
