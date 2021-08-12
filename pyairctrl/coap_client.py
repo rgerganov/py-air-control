@@ -74,9 +74,10 @@ class HTTPAirClientBase(ABC):
 class CoAPAirClient(HTTPAirClientBase):
     SECRET_KEY = "JiangPan"
 
-    def __init__(self, host, port=5683, debug=False):
+    def __init__(self, host, port=5683, debug=False, timeout=30.0):
         super().__init__(host, port, debug)
         self.client = self._create_coap_client(self.server, self.port)
+        self.timeout = timeout
         self.response = None
         self._sync()
 
@@ -91,7 +92,7 @@ class CoAPAirClient(HTTPAirClientBase):
 
     def _sync(self):
         self.syncrequest = binascii.hexlify(os.urandom(4)).decode("utf8").upper()
-        resp = self.client.post("/sys/dev/sync", self.syncrequest, timeout=5)
+        resp = self.client.post("/sys/dev/sync", self.syncrequest, timeout=self.timeout)
         if resp:
             self.client_key = resp.payload
         else:
@@ -145,7 +146,7 @@ class CoAPAirClient(HTTPAirClientBase):
         try:
             request = self.client.mk_request(defines.Codes.GET, path)
             request.observe = 0
-            self.response = self.client.send_request(request, None, 2)
+            self.response = self.client.send_request(request, None, self.timeout)
             encrypted_payload = self.response.payload
             decrypted_payload = self._decrypt_payload(encrypted_payload)
         except WrongDigestException:
@@ -174,7 +175,7 @@ class CoAPAirClient(HTTPAirClientBase):
                 }
             }
             encrypted_payload = self._encrypt_payload(json.dumps(payload))
-            response = self.client.post(path, encrypted_payload)
+            response = self.client.post(path, encrypted_payload, timeout=self.timeout)
             if self.debug:
                 print(response)
             return response.payload == '{"status":"success"}'
