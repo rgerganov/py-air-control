@@ -3,6 +3,7 @@
 import argparse
 import sys
 import pprint
+import urllib.error
 
 from pyairctrl.status_transformer import STATUS_TRANSFORMER
 from pyairctrl.coap_client import CoAPAirClient
