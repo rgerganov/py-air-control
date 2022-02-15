@@ -19,7 +19,7 @@ setuptools.setup(
     packages=['pyairctrl'],
     install_requires=[
         'pycryptodomex>=3.4.7',
-        'CoAPthon3>=1.0.1'
+        'CoAPthon3 @ git+https://github.com/rgerganov/CoAPthon3',
         ],
     entry_points={
         'console_scripts': [
